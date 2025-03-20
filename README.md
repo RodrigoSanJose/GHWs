@@ -1,7 +1,7 @@
 # GHWs
-A Sage package for computing the generalized Hamming weights (GHWs) and the relative generalized Hamming weights (RGHWs) of linear codes. 
+A Sage package for computing the generalized Hamming weights (GHWs) and the relative generalized Hamming weights (RGHWs) of linear codes. For more details about the algorithms used and the implementation, please read the upcoming paper. 
 
-Examples can be found in the help section of each function (function? will return this section). Please check the incoming paper about this topic for more details about the implementation.
+Examples can be found in the help section of each function (function? will return this section). 
 
 **How to use**: download GHWs.py and write `load("GHWs.py")` in Sage. Depending on your current directory, this may require specifying the path of the package, e.g., `load("/home/user/GHWs.py")`. 
 
@@ -16,7 +16,7 @@ hierarchy(C)
 Output: [8, 12, 14, 15, 16]
 
 
-**List of functions**: We provide several main functions, as well as some auxiliary functions for working with generalized Hamming weights. Some of the main functions may use a noticeable amount of RAM for larger finite field sizes. We provide a low memory version that is slower in general, but with a low RAM usage. 
+**List of functions**: We provide several main functions, as well as some auxiliary functions for working with generalized Hamming weights. Some of the main functions may use a noticeable amount of RAM for larger finite field sizes. We provide a low memory version of these functions that is slower in general, but with a lower RAM usage. 
   - **Main functions**: 'GHW', 'hierarchy', 'RGHW', 'rhierarchy', 'higher_spectrum', 'rhigher_spectrum', 'matrix_supp', 'subspaces', 'num_subspaces', 'wei_duality'.
   - **Low memory main functions**: 'GHW_low_mem', 'hierarchy_low_mem', 'RGHW_low_mem', 'rhierarchy_low_mem', 'higher_spectrum_low_mem', 'rhigher_spectrum_low_mem'.
   - **Auxiliary functions**: 'vecwt', 'coltw', 'standard', 'is_cyclic', 'bch_bound', 'information'.
