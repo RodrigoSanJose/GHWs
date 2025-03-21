@@ -21,6 +21,6 @@ Output: [8, 12, 14, 15, 16]
   - **Low memory main functions**: 'GHW_low_mem', 'hierarchy_low_mem', 'RGHW_low_mem', 'rhierarchy_low_mem', 'higher_spectrum_low_mem', 'rhigher_spectrum_low_mem'.
   - **Auxiliary functions**: 'vecwt', 'coltw', 'standard', 'is_cyclic', 'bch_bound', 'information'.
 
-**Tests**: it is possible to test that the functions are working propertly by running the test test_GHWs.sage. This can be done by writing `sage test_GHWs.sage`. This requires to have GHWs.py in the same directory (or the corresponding path has to be specified in the first line of test_GHWs.sage). The test should take between 130s and 400s, depending on the processor. 
+**Tests**: it is possible to test that the functions are working propertly by running the test test_GHWs.sage (test_GHWs_low_mem.sage for the low memory functions). This can be done by writing `sage test_GHWs.sage`. This assumes the folder structure follows that of this repository. Otherwise, the line `load(path2)` from the test file has to be changed to specify the path of GHWs.py. The test should take between 130s and 500s, depending on whether we are using the low memory functions or not and the processor's performance. 
 
-**Citation**: if you use this implementation for your research, please consider citing the upcoming paper.
+**Citation**: if you use this implementation for your research, please consider citing the upcoming paper and this repository.
