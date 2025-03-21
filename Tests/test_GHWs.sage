@@ -7,7 +7,7 @@ from pathlib import Path
 
 path1 = Path(__file__).resolve()
 path2 = path1.parent.parent / 'GHWs' / 'GHWs.py'
-load("path2")
+load(path2)
 
 # Formula for the GHWs of Reed-Muller codes
 
