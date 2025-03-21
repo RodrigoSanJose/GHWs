@@ -1,8 +1,13 @@
-load("GHWs.py")
-
 # Required imports
 
 import time
+from pathlib import Path
+
+# Load the package GHWs
+
+path1 = Path(__file__).resolve()
+path2 = path1.parent.parent / 'GHWs' / 'GHWs.py'
+load("path2")
 
 # Formula for the GHWs of Reed-Muller codes
 
