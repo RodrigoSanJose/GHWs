@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+title: >-
+  GHWs: A Sage package for computing the generalized Hamming weights of a linear code 
+message: >-
+  If you use this package, please cite the corresponding paper and/or the GitHub repository.
+type: package
+authors:
+  - given-names: Rodrigo
+    family-names: San-José
+identifiers:
+  - type: doi
+    value: 10.48550/arXiv.2503.17764
+    description: ArXiv Version of the paper
+repository-code: 'https://github.com/RodrigoSanJose/GHWs'
