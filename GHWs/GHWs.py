@@ -66,7 +66,7 @@ def vecwt(w, n, K):
 def colwt(w, n, K):
     r"""
     This is an auxiliary function for GHW, hierarchy, RGHW and rhierarchy. 
-    It computes all the vectors v of length n such that the last n-w coordinates
+    It computes all the vectors v of length n such that the last n - w coordinates
     are equal to 0 and Hamming weight between 1 and w (both included).
 
     OUTPUT:
@@ -80,9 +80,9 @@ def colwt(w, n, K):
     
     """
     L = []
-    for i in range(1, w+1):
+    for i in range(1, w + 1):
         L = L + vecwt(i, w, K)
-    return [vector(K, list(i)+[0 for j in range(n-w)]) for i in L]
+    return [vector(K, list(i) + [0 for j in range(n - w)]) for i in L]
     
 def standard(i, n, K):
     r"""
@@ -99,7 +99,7 @@ def standard(i, n, K):
     (0, 0, 1)
     
     """
-    temp = [0 for j in range(i)]+[1]+[0 for j in range(i, n-1)]
+    temp = [0 for j in range(i)] + [1] + [0 for j in range(i, n - 1)]
     return vector(K, temp)
 
 def is_cyclic(C):
@@ -124,7 +124,7 @@ def is_cyclic(C):
     G = C.generator_matrix()
     K = C.base_field()
     n = C.length()
-    P = Permutation([n]+[i for i in range(1, n)])
+    P = Permutation([n] + [i for i in range(1, n)])
     cyc = True
     for i in G:
         if vector(K, P.action(i)) not in C:
@@ -168,16 +168,16 @@ def bch_bound(C):
     CC = codes.CyclicCode(generator_pol = g, length = n)
     I = CC.defining_set()
     Ibis = I + I # We duplicate I to be able to detect consecutive elements containing
-    # both 0 and n-1
+    # both 0 and n - 1
     bound = 1
     for i in range(len(I)):
         consecutive = 0
         for j in range(len(I)):
-            if (I[i]+j in Ibis)%n: 
+            if (I[i] + j in Ibis) % n: 
                 consecutive = consecutive + 1
             else:
                 break
-        bound = max(bound, consecutive+1)
+        bound = max(bound, consecutive + 1)
     return bound
 
 def information(G):
@@ -225,10 +225,10 @@ def information(G):
     sup = list(matrix_supp(G))
     nn = len(sup)
     GG = copy(G)
-    P = range(1, n+1)
+    P = range(1, n + 1)
     comp = sup # This contains the complement of the coordinates already
     # covered by the information sets in inf_sets
-    while len(flatten(inf_sets))<nn:
+    while len(flatten(inf_sets)) < nn:
         GG = matrix(K, [G.columns()[i] for i in comp]).transpose() # We restrict
         # to the columns of G not yet covered 
 
@@ -242,7 +242,7 @@ def information(G):
             G0 = gen_mats[0].columns()
             cols = [G0[i] for i in range(n) if i in Itemp]
             for i in range(n):
-                if i not in Itemp and matrix(K, cols+[G0[i]]).rank()>len(Itemp):
+                if i not in Itemp and matrix(K, cols + [G0[i]]).rank()>len(Itemp):
                     Itemp.append(i)
                     cols.append(G0[i])
                 if len(Itemp) == k:
@@ -250,9 +250,9 @@ def information(G):
             inf_sets.append(sorted(Itemp))
 
         # We construct the corresponding generator matrix
-        Itemp2 = [i+1 for i in Itemp]
+        Itemp2 = [i + 1 for i in Itemp]
         # This permutation puts the indices in Itemp in the first positions
-        P = Permutation(Itemp2+[i for i in range(1, n+1) if i not in Itemp2])
+        P = Permutation(Itemp2 + [i for i in range(1, n + 1) if i not in Itemp2])
         # We put the columns associated to the indices of Itemp first, and 
         # compute the reduced row echelon form
         PG = matrix(K, P.action(G.columns())).transpose().rref()
@@ -323,19 +323,19 @@ def subspaces(r, w, n, K):
     """
     L = []
     for y in combinations(range(n), w):
-        S = combinations(y[1:], r-1) # We assume we have a pivot on the first
-        # position, and we choose r-1 more pivots
+        S = combinations(y[1:], r - 1) # We assume we have a pivot on the first
+        # position, and we choose r - 1 more pivots
         for s in S:
             comp = [z for z in y if z not in s and z!=y[0]] # Non pivots
-            ss = [y[0]]+list(s) # Pivots
+            ss = [y[0]] + list(s) # Pivots
             comp = list(comp)
             weights_columns = []
             for i in comp:
                 j = 1
-                while i-j not in ss:
+                while i - j not in ss:
                     j = j + 1
-                ind = ss.index(i-j) 
-                weights_columns.append(ind+1) # The columns can have
+                ind = ss.index(i - j) 
+                weights_columns.append(ind + 1) # The columns can have
                 # different weights depending on their position relative
                 # to the pivots
             # The list of all possible non-pivot columns:
@@ -372,8 +372,8 @@ def num_subspaces(r, w, n, K):
     except:
         raise Exception('K has to be a finite field')
     s = 0
-    for i in range(w-r+1):
-        s = s + (-1)**i * gaussian_binomial(w-i, r)(q=q) * binomial(w, i)
+    for i in range(w - r + 1):
+        s = s + (-1)**i * gaussian_binomial(w - i, r)(q=q) * binomial(w, i)
     return s * binomial(n, w)
     
 def wei_duality(L, n=None): 
@@ -395,7 +395,7 @@ def wei_duality(L, n=None):
     """
     if n is None:
         n = L[-1]
-    return [i for i in range(1, n+1) if n-i+1 not in L]
+    return [i for i in range(1, n + 1) if n - i + 1 not in L]
     
 def GHW(C, r, L=None, verbose=False):  
     r"""
@@ -430,13 +430,13 @@ def GHW(C, r, L=None, verbose=False):
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
-    if r not in range(1, k+1):
+    if r not in range(1, k + 1):
         raise Exception('Invalid value of r')
     # Only cyclic codes with non-repeted roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
-            L = [[i+1 for i in range(k)], [G], [0]] 
+            L = [[i + 1 for i in range(k)], [G], [0]] 
         else:
             L = information(G)
     [inf, gen, red] = L
@@ -467,7 +467,7 @@ def GHW(C, r, L=None, verbose=False):
                         if w0 == w:
                             # We store in rm the indices of the matrices that are not necessary
                             # to get ghwlb >= ghwub at the end of this iteration (if any)
-                            rm = rm + srange(j+1, len(gen))
+                            rm = rm + srange(j + 1, len(gen))
                         break
         if verbose:
             print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
@@ -568,12 +568,12 @@ def hierarchy(C, L=None, verbose=False):
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
-            L = [[i+1 for i in range(k)], [G], [0]] 
+            L = [[i + 1 for i in range(k)], [G], [0]] 
         else:
             L = information(G)
     [inf, gen, red] = L
     hierarchyghw = []
-    for r in range(1, k+1):
+    for r in range(1, k + 1):
         if verbose:
             print('r =', r)
         if r == 1:
@@ -607,7 +607,7 @@ def hierarchy(C, L=None, verbose=False):
                             if w0 == w:
                                 # We store in rm the indices of the matrices that are not necessary
                                 # to get ghwlb >= ghwub at the end of this iteration (if any)
-                                rm = rm + srange(j+1, len(gen))
+                                rm = rm + srange(j + 1, len(gen))
                             break
             if verbose:
                 print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
@@ -694,7 +694,7 @@ def RGHW(C, C2, r, L=None, verbose=False):
     G2 = C2.systematic_generator_matrix()
     H2 = C2.parity_check_matrix()
     k2 = C2.dimension()
-    if r not in range(1, k-k2+1):
+    if r not in range(1, k - k2 + 1):
         raise Exception('Invalid value of r')
     if not H * G2.transpose() == 0:
         raise Exception('C2 is not contained in C')
@@ -704,7 +704,7 @@ def RGHW(C, C2, r, L=None, verbose=False):
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
-            L = [[i+1 for i in range(k)], [G], [0]] 
+            L = [[i + 1 for i in range(k)], [G], [0]] 
         else:
             L = information(G)
     [inf, gen, red] = L
@@ -735,7 +735,7 @@ def RGHW(C, C2, r, L=None, verbose=False):
                         if w0 == w:
                             # We store in rm the indices of the matrices that are not necessary
                             # to get ghwlb >= ghwub at the end of this iteration (if any)
-                            rm = rm + srange(j+1, len(gen))
+                            rm = rm + srange(j + 1, len(gen))
                         break
         if verbose:
             print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
@@ -833,12 +833,12 @@ def rhierarchy(C, C2, L=None, verbose=False):
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
-            L = [[i+1 for i in range(k)], [G], [0]]
+            L = [[i + 1 for i in range(k)], [G], [0]]
         else:
             L = information(G)
     [inf, gen, red] = L
     hierarchyrghw = []
-    for r in range(1, k-k2+1):
+    for r in range(1, k - k2 + 1):
         if verbose:
             print('r =', r)
         if r == 1:
@@ -871,7 +871,7 @@ def rhierarchy(C, C2, L=None, verbose=False):
                             if w0 == w:
                                 # We store in rm the indices of the matrices that are not necessary
                                 # to get ghwlb >= ghwub at the end of this iteration (if any)
-                                rm = rm + srange(j+1, len(gen))
+                                rm = rm + srange(j + 1, len(gen))
                             break
             if verbose:
                 print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
@@ -983,23 +983,23 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
     if subspace_list:
         subsp = {} 
     if R is None:
-        R = range(k+1)     
+        R = range(k + 1)     
     for r in R:
         if verbose:
             print('r =', r)
         if r == 0:
-            spectemp = {0:1}
-            spec.update({0:spectemp})
+            spectemp = {0: 1}
+            spec.update({0: spectemp})
             if subspace_list:
-                subsptemp = {0:[matrix(K, [0 for i in range(n)])]}
-                subsp = {0:subsptemp}
+                subsptemp = {0: [matrix(K, [0 for i in range(n)])]}
+                subsp = {0: subsptemp}
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue 
         spectemp = {}
         if subspace_list:
             subsptemp = {}
-        for w in range(r, k+1):
+        for w in range(r, k + 1):
             rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
             for y in combinations(range(k), w): # All possible supports of weight w
                 for mat in rrefs:
@@ -1013,22 +1013,22 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
                     Mtemp = matrix(MM).transpose() * G
                     soptemp = len(matrix_supp(Mtemp))
                     try:
-                        spectemp.update({soptemp: spectemp[soptemp]+1})
+                        spectemp.update({soptemp: spectemp[soptemp] + 1})
                     except:
                         spectemp.update({soptemp: 1})
                     if subspace_list:
                         try:
-                            subsptemp.update({soptemp: subsptemp[soptemp]+[Mtemp]})
+                            subsptemp.update({soptemp: subsptemp[soptemp] + [Mtemp]})
                         except:
                             subsptemp.update({soptemp: [Mtemp]})
             if verbose:
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
         spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} 
-        spec.update({r:spectemp})
+        spec.update({r: spectemp})
         if subspace_list:
             subsptemp = {k: v for k, v in sorted(subsptemp.items(), key=lambda item: item[0])} 
-            subsp.update({r:subsptemp})
+            subsp.update({r: subsptemp})
         if verbose:
             print('Spectrum:', spec[r], ' '*100) 
     if subspace_list:
@@ -1105,26 +1105,26 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
     if subspace_list:
         subsp = {} 
     if R is None:
-        R = range(k-k2+1) 
-    elif not set(R).issubset(set(range(k-k2+1))):
+        R = range(k - k2 + 1) 
+    elif not set(R).issubset(set(range(k - k2 + 1))):
         raise Exception('Invalid range of values for R')
         
     for r in R:
         if verbose:
             print('r =', r)
         if r == 0:
-            spectemp = {0:1}
-            spec.update({0:spectemp})
+            spectemp = {0: 1}
+            spec.update({0: spectemp})
             if subspace_list:
-                subsptemp = {0:[matrix(K, [0 for i in range(n)])]}
-                subsp = {0:subsptemp}
+                subsptemp = {0: [matrix(K, [0 for i in range(n)])]}
+                subsp = {0: subsptemp}
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue  
         spectemp = {}
         if subspace_list:
             subsptemp = {}
-        for w in range(r, k+1):
+        for w in range(r, k + 1):
             rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
             for y in combinations(range(k), w): # All possible supports of weight w
                 for mat in rrefs:
@@ -1140,22 +1140,22 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
                     interd = r - (H2 * Mtemp.transpose()).rank()
                     if interd == 0:
                         try:
-                            spectemp.update({soptemp: spectemp[soptemp]+1})
+                            spectemp.update({soptemp: spectemp[soptemp] + 1})
                         except:
                             spectemp.update({soptemp: 1})
                         if subspace_list:
                             try:
-                                subsptemp.update({soptemp: subsptemp[soptemp]+[Mtemp]})
+                                subsptemp.update({soptemp: subsptemp[soptemp] + [Mtemp]})
                             except:
                                 subsptemp.update({soptemp: [Mtemp]})
             if verbose:
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
         spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} 
-        spec.update({r:spectemp})
+        spec.update({r: spectemp})
         if subspace_list:
             subsptemp = {k: v for k, v in sorted(subsptemp.items(), key=lambda item: item[0])} 
-            subsp.update({r:subsptemp})
+            subsp.update({r: subsptemp})
         if verbose:
             print('Spectrum:', spec[r], ' '*100) 
     if subspace_list:
@@ -1200,13 +1200,13 @@ def GHW_low_mem(C, r, L=None, verbose=False):
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
-    if r not in range(1, k+1):
+    if r not in range(1, k + 1):
         raise Exception('Invalid value of r')
     # Only cyclic codes with non-repeted roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
-            L = [[i+1 for i in range(k)], [G], [0]] 
+            L = [[i + 1 for i in range(k)], [G], [0]] 
         else:
             L = information(G)
     [inf, gen, red] = L
@@ -1237,7 +1237,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
                         if w0 == w:
                             # We store in rm the indices of the matrices that are not necessary
                             # to get ghwlb >= ghwub at the end of this iteration (if any)
-                            rm = rm + srange(j+1, len(gen))
+                            rm = rm + srange(j + 1, len(gen))
                         break
         if verbose:
             print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
@@ -1246,17 +1246,17 @@ def GHW_low_mem(C, r, L=None, verbose=False):
         gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm] 
         terminate = False
         y = range(w) # We start with support {1,...,w}
-        for s in combinations(y[1:], r-1): # We assume we have a pivot on the first
-            # position, and we choose r-1 more pivots
+        for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
+            # position, and we choose r - 1 more pivots
             comp = [z for z in y if z not in s and z!=y[0]] # Non pivots
-            ss = [y[0]]+list(s) # Pivots
+            ss = [y[0]] + list(s) # Pivots
             weights_columns = []
             for i in comp:
                 j = 1
-                while i-j not in ss:
+                while i - j not in ss:
                     j = j + 1
-                ind = ss.index(i-j) 
-                weights_columns.append(ind+1) # The columns can have
+                ind = ss.index(i - j) 
+                weights_columns.append(ind + 1) # The columns can have
                 # different weights depending on their position relative
                 # to the pivots
             # The list of all possible non-pivot columns:
@@ -1360,12 +1360,12 @@ def hierarchy_low_mem(C, L=None, verbose=False):
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
-            L = [[i+1 for i in range(k)], [G], [0]] 
+            L = [[i + 1 for i in range(k)], [G], [0]] 
         else:
             L = information(G)
     [inf, gen, red] = L
     hierarchyghw = []
-    for r in range(1, k+1):
+    for r in range(1, k + 1):
         if verbose:
             print('r =', r)
         if r == 1:
@@ -1399,7 +1399,7 @@ def hierarchy_low_mem(C, L=None, verbose=False):
                             if w0 == w:
                                 # We store in rm the indices of the matrices that are not necessary
                                 # to get ghwlb >= ghwub at the end of this iteration (if any)
-                                rm = rm + srange(j+1, len(gen))
+                                rm = rm + srange(j + 1, len(gen))
                             break
             if verbose:
                 print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
@@ -1408,17 +1408,17 @@ def hierarchy_low_mem(C, L=None, verbose=False):
             gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm] 
             terminate = False
             y = range(w) # We start with support {1,...,w}
-            for s in combinations(y[1:], r-1): # We assume we have a pivot on the first
-                # position, and we choose r-1 more pivots
+            for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
+                # position, and we choose r - 1 more pivots
                 comp = [z for z in y if z not in s and z!=y[0]] # Non pivots
-                ss = [y[0]]+list(s) # Pivots
+                ss = [y[0]] + list(s) # Pivots
                 weights_columns = []
                 for i in comp:
                     j = 1
-                    while i-j not in ss:
+                    while i - j not in ss:
                         j = j + 1
-                    ind = ss.index(i-j) 
-                    weights_columns.append(ind+1) # The columns can have
+                    ind = ss.index(i - j) 
+                    weights_columns.append(ind + 1) # The columns can have
                     # different weights depending on their position relative
                     # to the pivots
                 # The list of all possible non-pivot columns:
@@ -1510,7 +1510,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
     G2 = C2.systematic_generator_matrix()
     H2 = C2.parity_check_matrix()
     k2 = C2.dimension()
-    if r not in range(1, k-k2+1):
+    if r not in range(1, k - k2 + 1):
         raise Exception('Invalid value of r')
     if not H * G2.transpose() == 0:
         raise Exception('C2 is not contained in C')
@@ -1520,7 +1520,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
-            L = [[i+1 for i in range(k)], [G], [0]] 
+            L = [[i + 1 for i in range(k)], [G], [0]] 
         else:
             L = information(G)
     [inf, gen, red] = L
@@ -1551,7 +1551,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
                         if w0 == w:
                             # We store in rm the indices of the matrices that are not necessary
                             # to get ghwlb >= ghwub at the end of this iteration (if any)
-                            rm = rm + srange(j+1, len(gen))
+                            rm = rm + srange(j + 1, len(gen))
                         break
         if verbose:
             print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
@@ -1560,17 +1560,17 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
         gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm] 
         terminate = False
         y = range(w) # We start with support {1,...,w}
-        for s in combinations(y[1:], r-1): # We assume we have a pivot on the first
-            # position, and we choose r-1 more pivots
+        for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
+            # position, and we choose r - 1 more pivots
             comp = [z for z in y if z not in s and z!=y[0]] # Non pivots
-            ss = [y[0]]+list(s) # Pivots
+            ss = [y[0]] + list(s) # Pivots
             weights_columns = []
             for i in comp:
                 j = 1
-                while i-j not in ss:
+                while i - j not in ss:
                     j = j + 1
-                ind = ss.index(i-j) 
-                weights_columns.append(ind+1) # The columns can have
+                ind = ss.index(i - j) 
+                weights_columns.append(ind + 1) # The columns can have
                 # different weights depending on their position relative
                 # to the pivots
             # The list of all possible non-pivot columns:
@@ -1673,12 +1673,12 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
-            L = [[i+1 for i in range(k)], [G], [0]]
+            L = [[i + 1 for i in range(k)], [G], [0]]
         else:
             L = information(G)
     [inf, gen, red] = L
     hierarchyrghw = []
-    for r in range(1, k-k2+1):
+    for r in range(1, k - k2 + 1):
         if verbose:
             print('r =', r)
         if r == 1:
@@ -1711,7 +1711,7 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
                             if w0 == w:
                                 # We store in rm the indices of the matrices that are not necessary
                                 # to get ghwlb >= ghwub at the end of this iteration (if any)
-                                rm = rm + srange(j+1, len(gen))
+                                rm = rm + srange(j + 1, len(gen))
                             break
             if verbose:
                 print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
@@ -1720,17 +1720,17 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
             gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm] 
             terminate = False
             y = range(w) # We start with support {1,...,w}
-            for s in combinations(y[1:], r-1): # We assume we have a pivot on the first
-                # position, and we choose r-1 more pivots
+            for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
+                # position, and we choose r - 1 more pivots
                 comp = [z for z in y if z not in s and z!=y[0]] # Non pivots
-                ss = [y[0]]+list(s) # Pivots
+                ss = [y[0]] + list(s) # Pivots
                 weights_columns = []
                 for i in comp:
                     j = 1
-                    while i-j not in ss:
+                    while i - j not in ss:
                         j = j + 1
-                    ind = ss.index(i-j) 
-                    weights_columns.append(ind+1) # The columns can have
+                    ind = ss.index(i - j) 
+                    weights_columns.append(ind + 1) # The columns can have
                     # different weights depending on their position relative
                     # to the pivots
                 # The list of all possible non-pivot columns:
@@ -1847,35 +1847,35 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
     if subspace_list:
         subsp = {} 
     if R is None:
-        R = range(k+1)     
+        R = range(k + 1)     
     for r in R:
         if verbose:
             print('r =', r)
         if r == 0:
-            spectemp = {0:1}
-            spec.update({0:spectemp})
+            spectemp = {0: 1}
+            spec.update({0: spectemp})
             if subspace_list:
-                subsptemp = {0:[matrix(K, [0 for i in range(n)])]}
-                subsp = {0:subsptemp}
+                subsptemp = {0: [matrix(K, [0 for i in range(n)])]}
+                subsp = {0: subsptemp}
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue 
         spectemp = {}
         if subspace_list:
             subsptemp = {}
-        for w in range(r, k+1):
+        for w in range(r, k + 1):
             y = range(w) # We start with support {1,...,w}
-            for s in combinations(y[1:], r-1): # We assume we have a pivot on the first
-                # position, and we choose r-1 more pivots
+            for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
+                # position, and we choose r - 1 more pivots
                 comp = [z for z in y if z not in s and z!=y[0]] # Non pivots
-                ss = [y[0]]+list(s) # Pivots
+                ss = [y[0]] + list(s) # Pivots
                 weights_columns = []
                 for i in comp:
                     j = 1
-                    while i-j not in ss:
+                    while i - j not in ss:
                         j = j + 1
-                    ind = ss.index(i-j) 
-                    weights_columns.append(ind+1) # The columns can have
+                    ind = ss.index(i - j) 
+                    weights_columns.append(ind + 1) # The columns can have
                     # different weights depending on their position relative
                     # to the pivots
                 # The list of all possible non-pivot columns:
@@ -1895,22 +1895,22 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
                         Mtemp = matrix(K, MM).transpose() * G
                         soptemp = len(matrix_supp(Mtemp))
                         try:
-                            spectemp.update({soptemp: spectemp[soptemp]+1})
+                            spectemp.update({soptemp: spectemp[soptemp] + 1})
                         except:
                             spectemp.update({soptemp: 1})
                         if subspace_list:
                             try:
-                                subsptemp.update({soptemp: subsptemp[soptemp]+[Mtemp]})
+                                subsptemp.update({soptemp: subsptemp[soptemp] + [Mtemp]})
                             except:
                                 subsptemp.update({soptemp: [Mtemp]})
             if verbose:
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
         spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} 
-        spec.update({r:spectemp})
+        spec.update({r: spectemp})
         if subspace_list:
             subsptemp = {k: v for k, v in sorted(subsptemp.items(), key=lambda item: item[0])} 
-            subsp.update({r:subsptemp})
+            subsp.update({r: subsptemp})
         if verbose:
             print('Spectrum:',spec[r], ' '*100) 
     if subspace_list:
@@ -1989,38 +1989,38 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
     if subspace_list:
         subsp = {} 
     if R is None:
-        R = range(k-k2+1) 
-    elif not set(R).issubset(set(range(k-k2+1))):
+        R = range(k - k2 + 1) 
+    elif not set(R).issubset(set(range(k - k2 + 1))):
         raise Exception('Invalid range of values for R')
         
     for r in R:
         if verbose:
             print('r =', r)
         if r == 0:
-            spectemp = {0:1}
-            spec.update({0:spectemp})
+            spectemp = {0: 1}
+            spec.update({0: spectemp})
             if subspace_list:
-                subsptemp = {0:[matrix(K, [0 for i in range(n)])]}
-                subsp = {0:subsptemp}
+                subsptemp = {0: [matrix(K, [0 for i in range(n)])]}
+                subsp = {0: subsptemp}
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue  
         spectemp = {}
         if subspace_list:
             subsptemp = {}
-        for w in range(r, k+1):
+        for w in range(r, k + 1):
             y = range(w) # We start with support {1,...,w}
-            for s in combinations(y[1:], r-1): # We assume we have a pivot on the first
-                # position, and we choose r-1 more pivots
+            for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
+                # position, and we choose r - 1 more pivots
                 comp = [z for z in y if z not in s and z!=y[0]] # Non pivots
-                ss = [y[0]]+list(s) # Pivots
+                ss = [y[0]] + list(s) # Pivots
                 weights_columns = []
                 for i in comp:
                     j = 1
-                    while i-j not in ss:
+                    while i - j not in ss:
                         j = j + 1
-                    ind = ss.index(i-j) 
-                    weights_columns.append(ind+1) # The columns can have
+                    ind = ss.index(i - j) 
+                    weights_columns.append(ind + 1) # The columns can have
                     # different weights depending on their position relative
                     # to the pivots
                 # The list of all possible non-pivot columns:
@@ -2042,22 +2042,22 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
                         interd = r - (H2 * Mtemp.transpose()).rank()
                         if interd == 0:
                             try:
-                                spectemp.update({soptemp: spectemp[soptemp]+1})
+                                spectemp.update({soptemp: spectemp[soptemp] + 1})
                             except:
                                 spectemp.update({soptemp: 1})
                             if subspace_list:
                                 try:
-                                    subsptemp.update({soptemp: subsptemp[soptemp]+[Mtemp]})
+                                    subsptemp.update({soptemp: subsptemp[soptemp] + [Mtemp]})
                                 except:
                                     subsptemp.update({soptemp: [Mtemp]})
             if verbose:
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
         spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} 
-        spec.update({r:spectemp})
+        spec.update({r: spectemp})
         if subspace_list:
             subsptemp = {k: v for k, v in sorted(subsptemp.items(), key=lambda item: item[0])} 
-            subsp.update({r:subsptemp})
+            subsp.update({r: subsptemp})
         if verbose:
             print('Spectrum:',spec[r], ' '*100) 
     if subspace_list:
