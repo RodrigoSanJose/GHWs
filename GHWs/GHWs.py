@@ -1,5 +1,5 @@
 #################################################################################
-# V1.0 20/03/25
+# V1.01 10/04/25
 # Author:
 # Rodrigo San-José. Contact: rodrigo.san-jose@uva.es
 # GitHub repository: https://https://github.com/RodrigoSanJose/GHW
@@ -40,10 +40,10 @@ def vecwt(w, n, K):
     
     A list of such vectors.
 
-    EXAMPLES: 
+    EXAMPLES:: 
     
-    >> vecwt(2, 3, GF(2))
-    [(1, 1, 0), (1, 0, 1), (0, 1, 1)]
+        sage: vecwt(2, 3, GF(2))
+        [(1, 1, 0), (1, 0, 1), (0, 1, 1)]
 
     """
     L = []
@@ -73,10 +73,10 @@ def colwt(w, n, K):
 
     A list of such vectors.
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> colwt(2, 3, GF(2))
-    [(1, 0, 0), (0, 1, 0), (1, 1, 0)]
+        sage: colwt(2, 3, GF(2))
+        [(1, 0, 0), (0, 1, 0), (1, 1, 0)]
     
     """
     L = []
@@ -93,10 +93,10 @@ def standard(i, n, K):
 
     The corresponding standard vector.
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> standard(2, 3, GF(2))
-    (0, 0, 1)
+        sage: standard(2, 3, GF(2))
+        (0, 0, 1)
     
     """
     temp = [0 for j in range(i)] + [1] + [0 for j in range(i, n - 1)]
@@ -110,15 +110,15 @@ def is_cyclic(C):
 
     True if C is cyclic, False otherwise
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> C = codes.BCHCode(GF(2), 15, 3)
-    >> is_cyclic(C)
-    True
+        sage: C = codes.BCHCode(GF(2), 15, 3)
+        sage: is_cyclic(C)
+        True
 
-    >> C = codes.BinaryReedMullerCode(2, 4)
-    >> is_cyclic(C)
-    False
+        sage: C = codes.BinaryReedMullerCode(2, 4)
+        sage: is_cyclic(C)
+        False
 
     """
     G = C.generator_matrix()
@@ -141,11 +141,11 @@ def bch_bound(C):
 
     The value of the bound.
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> C = codes.BCHCode(GF(2), 15, 3)
-    >> bch_bound(C)
-    3
+        sage: C = codes.BCHCode(GF(2), 15, 3)
+        sage: bch_bound(C)
+        3
 
     """
     if not is_cyclic(C):
@@ -195,25 +195,25 @@ def information(G):
     systematic form, and redundancy contains the values of the redundancies corresponding
     to the information sets in inf_sets.
 
-    EXAMPLE:
+    EXAMPLES::
 
-    >> C = codes.BCHCode(GF(2), 15, 3)
-    >> information(C.generator_matrix())
-    [[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [0, 1, 2, 3, 4, 5, 6, 11, 12, 13, 14]],
-     [
-    [1 0 0 0 0 0 0 0 0 0 0 1 1 0 0]  [0 0 0 0 0 0 0 1 1 0 0 1 0 0 0]
-    [0 1 0 0 0 0 0 0 0 0 0 0 1 1 0]  [0 0 0 0 0 0 0 0 1 1 0 0 1 0 0]
-    [0 0 1 0 0 0 0 0 0 0 0 0 0 1 1]  [0 0 0 0 0 0 0 0 0 1 1 0 0 1 0]
-    [0 0 0 1 0 0 0 0 0 0 0 1 1 0 1]  [0 0 0 0 0 0 0 1 1 0 1 0 0 0 1]
-    [0 0 0 0 1 0 0 0 0 0 0 1 0 1 0]  [1 0 0 0 0 0 0 1 0 1 0 0 0 0 0]
-    [0 0 0 0 0 1 0 0 0 0 0 0 1 0 1]  [0 1 0 0 0 0 0 0 1 0 1 0 0 0 0]
-    [0 0 0 0 0 0 1 0 0 0 0 1 1 1 0]  [0 0 1 0 0 0 0 1 1 1 0 0 0 0 0]
-    [0 0 0 0 0 0 0 1 0 0 0 0 1 1 1]  [0 0 0 1 0 0 0 0 1 1 1 0 0 0 0]
-    [0 0 0 0 0 0 0 0 1 0 0 1 1 1 1]  [0 0 0 0 1 0 0 1 1 1 1 0 0 0 0]
-    [0 0 0 0 0 0 0 0 0 1 0 1 0 1 1]  [0 0 0 0 0 1 0 1 0 1 1 0 0 0 0]
-    [0 0 0 0 0 0 0 0 0 0 1 1 0 0 1], [0 0 0 0 0 0 1 1 0 0 1 0 0 0 0]
-    ],
-     [0, 7]]
+        sage: C = codes.BCHCode(GF(2), 15, 3)
+        sage: information(C.generator_matrix())
+        [[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [0, 1, 2, 3, 4, 5, 6, 11, 12, 13, 14]],
+        [
+        [1 0 0 0 0 0 0 0 0 0 0 1 1 0 0]  [0 0 0 0 0 0 0 1 1 0 0 1 0 0 0]
+        [0 1 0 0 0 0 0 0 0 0 0 0 1 1 0]  [0 0 0 0 0 0 0 0 1 1 0 0 1 0 0]
+        [0 0 1 0 0 0 0 0 0 0 0 0 0 1 1]  [0 0 0 0 0 0 0 0 0 1 1 0 0 1 0]
+        [0 0 0 1 0 0 0 0 0 0 0 1 1 0 1]  [0 0 0 0 0 0 0 1 1 0 1 0 0 0 1]
+        [0 0 0 0 1 0 0 0 0 0 0 1 0 1 0]  [1 0 0 0 0 0 0 1 0 1 0 0 0 0 0]
+        [0 0 0 0 0 1 0 0 0 0 0 0 1 0 1]  [0 1 0 0 0 0 0 0 1 0 1 0 0 0 0]
+        [0 0 0 0 0 0 1 0 0 0 0 1 1 1 0]  [0 0 1 0 0 0 0 1 1 1 0 0 0 0 0]
+        [0 0 0 0 0 0 0 1 0 0 0 0 1 1 1]  [0 0 0 1 0 0 0 0 1 1 1 0 0 0 0]
+        [0 0 0 0 0 0 0 0 1 0 0 1 1 1 1]  [0 0 0 0 1 0 0 1 1 1 1 0 0 0 0]
+        [0 0 0 0 0 0 0 0 0 1 0 1 0 1 1]  [0 0 0 0 0 1 0 1 0 1 1 0 0 0 0]
+        [0 0 0 0 0 0 0 0 0 0 1 1 0 0 1], [0 0 0 0 0 0 1 1 0 0 1 0 0 0 0]
+        ],
+        [0, 7]]
 
     """
     G = G.rref() 
@@ -285,11 +285,11 @@ def matrix_supp(M):
 
     The support of the rowspace of M, as a set.
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> M = matrix(GF(2), [[1,0,1,0],[1,1,0,0]])
-    >> matrix_supp(M)
-    {0,1,2}
+        sage: M = matrix(GF(2), [[1,0,1,0],[1,1,0,0]])
+        sage: matrix_supp(M)
+        {0,1,2}
     
     """
     sup = set()
@@ -299,26 +299,26 @@ def matrix_supp(M):
 
 def subspaces(r, w, n, K):
     r"""
-    Computes all the subspaces E contained in K^n with dim(E)=r and |supp(E)|=w.
+    Computes all the subspaces E contained in K^n with dim(E)=r and \|supp(E)\|=w.
 
     OUTPUT:
 
     A list with matrices in reduced row echelon form. The list of row spaces of
     these matrices gives all the aforementioned subspaces, without repetitions.
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> subspaces(2, 3, 4, GF(2))
-    [
-    [1 0 1 0]  [1 0 0 0]  [1 0 1 0]  [1 1 0 0]  [1 0 0 1]  [1 0 0 0]
-    [0 1 0 0], [0 1 1 0], [0 1 1 0], [0 0 1 0], [0 1 0 0], [0 1 0 1],
-    
-    [1 0 0 1]  [1 1 0 0]  [1 0 0 1]  [1 0 0 0]  [1 0 0 1]  [1 0 1 0]
-    [0 1 0 1], [0 0 0 1], [0 0 1 0], [0 0 1 1], [0 0 1 1], [0 0 0 1],
-    
-    [0 1 0 1]  [0 1 0 0]  [0 1 0 1]  [0 1 1 0]
-    [0 0 1 0], [0 0 1 1], [0 0 1 1], [0 0 0 1]
-    ]
+        sage: subspaces(2, 3, 4, GF(2))
+        [
+        [1 0 1 0]  [1 0 0 0]  [1 0 1 0]  [1 1 0 0]  [1 0 0 1]  [1 0 0 0]
+        [0 1 0 0], [0 1 1 0], [0 1 1 0], [0 0 1 0], [0 1 0 0], [0 1 0 1],
+        
+        [1 0 0 1]  [1 1 0 0]  [1 0 0 1]  [1 0 0 0]  [1 0 0 1]  [1 0 1 0]
+        [0 1 0 1], [0 0 0 1], [0 0 1 0], [0 0 1 1], [0 0 1 1], [0 0 0 1],
+        
+        [0 1 0 1]  [0 1 0 0]  [0 1 0 1]  [0 1 1 0]
+        [0 0 1 0], [0 0 1 1], [0 0 1 1], [0 0 0 1]
+        ]
     
     """
     L = []
@@ -355,16 +355,16 @@ def subspaces(r, w, n, K):
 def num_subspaces(r, w, n, K):
     r"""
     Computes e_w^r, the number of subspaces E in K^n with dim(E)=r and
-    |supp(E)|=w.
+    \|supp(E)\|=w.
 
     OUTPUT:
 
     A non-negative integer.
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> num_subspaces(2, 3, 4, GF(2))
-    16
+        sage: num_subspaces(2, 3, 4, GF(2))
+        16
 
     """
     try:
@@ -387,10 +387,10 @@ def wei_duality(L, n=None):
 
     A list with the weight hierarchy of the dual code.
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> wei_duality([5,7,10,11,12,13,14,15])
-    [7, 8, 10, 12, 13, 14, 15]
+        sage: wei_duality([5,7,10,11,12,13,14,15])
+        [7, 8, 10, 12, 13, 14, 15]
 
     """
     if n is None:
@@ -413,17 +413,17 @@ def GHW(C, r, L=None, verbose=False):
 
     The value of the rth GHW of C. 
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> C = codes.BinaryReedMullerCode(1, 5)
-    >> GHW(C, 2)
-    24
-    >> GHW(C, 2, verbose=True)
-    Lower: 2 Upper: 28 Support: 2 Expected: 5
-    Subspace with cardinality of support 24 found
-    Lower: 14 Upper: 24 Support: 3 Expected: 4
-    Lower: 19 Upper: 24 Support: 4 Expected: 4
-    24
+        sage: C = codes.BinaryReedMullerCode(1, 5)
+        sage: GHW(C, 2)
+        24
+        sage: GHW(C, 2, verbose=True)
+        Lower: 2 Upper: 28 Support: 2 Expected: 5
+        Subspace with cardinality of support 24 found
+        Lower: 14 Upper: 24 Support: 3 Expected: 4
+        Lower: 19 Upper: 24 Support: 4 Expected: 4
+        24
     
     """
     K = C.base_field()
@@ -526,38 +526,39 @@ def hierarchy(C, L=None, verbose=False):
 
     A list with the weight hierarchy of C.
 
-    EXAMPLES:
-    >> C = codes.BinaryReedMullerCode(1, 5)
-    >> hierarchy(C)
-    [16, 24, 28, 30, 31, 32]
-    >> hierarchy(C, verbose=True)
-    r = 1
-    Lower: 1 Upper: 27 Support: 1 Expected: 5
-    Subspace with cardinality of support 16 found
-    Lower: 9 Upper: 16 Support: 2 Expected: 3
-    Lower: 12 Upper: 16 Support: 3 Expected: 3
-    Current hierarchy: [16]
-    r = 2
-    Lower: 17 Upper: 28 Support: 2 Expected: 5
-    Subspace with cardinality of support 24 found
-    Lower: 17 Upper: 24 Support: 3 Expected: 4
-    Lower: 19 Upper: 24 Support: 4 Expected: 4
-    Current hierarchy: [16, 24]
-    r = 3
-    Lower: 25 Upper: 29 Support: 3 Expected: 5
-    Subspace with cardinality of support 28 found
-    Lower: 25 Upper: 28 Support: 4 Expected: 5
-    Lower: 25 Upper: 28 Support: 5 Expected: 5
-    Current hierarchy: [16, 24, 28]
-    r = 4
-    Lower: 29 Upper: 30 Support: 4 Expected: 5
-    Lower: 29 Upper: 30 Support: 5 Expected: 5
-    Current hierarchy: [16, 24, 28, 30]
-    r = 5
-    Current hierarchy: [16, 24, 28, 30, 31]
-    r = 6
-    Current hierarchy: [16, 24, 28, 30, 31, 32]
-    [16, 24, 28, 30, 31, 32]
+    EXAMPLES::
+
+        sage: C = codes.BinaryReedMullerCode(1, 5)
+        sage: hierarchy(C)
+        [16, 24, 28, 30, 31, 32]
+        sage: hierarchy(C, verbose=True)
+        r = 1
+        Lower: 1 Upper: 27 Support: 1 Expected: 5
+        Subspace with cardinality of support 16 found
+        Lower: 9 Upper: 16 Support: 2 Expected: 3
+        Lower: 12 Upper: 16 Support: 3 Expected: 3
+        Current hierarchy: [16]
+        r = 2
+        Lower: 17 Upper: 28 Support: 2 Expected: 5
+        Subspace with cardinality of support 24 found
+        Lower: 17 Upper: 24 Support: 3 Expected: 4
+        Lower: 19 Upper: 24 Support: 4 Expected: 4
+        Current hierarchy: [16, 24]
+        r = 3
+        Lower: 25 Upper: 29 Support: 3 Expected: 5
+        Subspace with cardinality of support 28 found
+        Lower: 25 Upper: 28 Support: 4 Expected: 5
+        Lower: 25 Upper: 28 Support: 5 Expected: 5
+        Current hierarchy: [16, 24, 28]
+        r = 4
+        Lower: 29 Upper: 30 Support: 4 Expected: 5
+        Lower: 29 Upper: 30 Support: 5 Expected: 5
+        Current hierarchy: [16, 24, 28, 30]
+        r = 5
+        Current hierarchy: [16, 24, 28, 30, 31]
+        r = 6
+        Current hierarchy: [16, 24, 28, 30, 31, 32]
+        [16, 24, 28, 30, 31, 32]
 
     """
     K = C.base_field()
@@ -669,21 +670,21 @@ def RGHW(C, C2, r, L=None, verbose=False):
 
     The value of the rth RGHW of C with respect to C2. 
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
-    >> G2 = matrix(GF(2), [G[-1]])
-    >> C = LinearCode(G)
-    >> C2 = LinearCode(G2)
-    >> RGHW(C, C2, 2)
-    5
-    >> RGHW(C, C2, 2, verbose=True)
-    Lower: 2 Upper: 6 Support: 2 Expected: 2
-    Subspace with cardinality of support 5 found
-    5
-    >> # Note that RGHW(C, C2, 2) can be higher than GHW(C, 2):
-    >> GHW(C, 2)
-    4
+        sage: G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
+        sage: G2 = matrix(GF(2), [G[-1]])
+        sage: C = LinearCode(G)
+        sage: C2 = LinearCode(G2)
+        sage: RGHW(C, C2, 2)
+        5
+        sage: RGHW(C, C2, 2, verbose=True)
+        Lower: 2 Upper: 6 Support: 2 Expected: 2
+        Subspace with cardinality of support 5 found
+        5
+        sage: # Note that RGHW(C, C2, 2) can be higher than GHW(C, 2):
+        sage: GHW(C, 2)
+        4
     
     """
     K = C.base_field()
@@ -797,24 +798,24 @@ def rhierarchy(C, C2, L=None, verbose=False):
 
     A list with the relative weight hierarchy of C with respect to C2.
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
-    >> G2 = matrix(GF(2), [G[-1]])
-    >> C = LinearCode(G)
-    >> C2 = LinearCode(G2)
-    >> rhierarchy(C, C2)
-    [3, 5]
-    >> rhierarchy(C, C2, verbose=True)
-    r = 1
-    Lower: 1 Upper: 6 Support: 1 Expected: 2
-    Subspace with cardinality of support 3 found
-    Current hierarchy: [3]
-    r = 2
-    Lower: 4 Upper: 6 Support: 2 Expected: 2
-    Subspace with cardinality of support 5 found
-    Current hierarchy: [3, 5]
-    [3, 5]
+        sage: G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
+        sage: G2 = matrix(GF(2), [G[-1]])
+        sage: C = LinearCode(G)
+        sage: C2 = LinearCode(G2)
+        sage: rhierarchy(C, C2)
+        [3, 5]
+        sage: rhierarchy(C, C2, verbose=True)
+        r = 1
+        Lower: 1 Upper: 6 Support: 1 Expected: 2
+        Subspace with cardinality of support 3 found
+        Current hierarchy: [3]
+        r = 2
+        Lower: 4 Upper: 6 Support: 2 Expected: 2
+        Subspace with cardinality of support 5 found
+        Current hierarchy: [3, 5]
+        [3, 5]
     
     """
     K = C.base_field()
@@ -930,7 +931,7 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
     cardinality of the support w, and whose values are the lists of all subcodes 
     of dimension r and cardinality of support w (given as matrices, the corresponding
     subspaces are the row spaces). In other words, subsp[r][w] is a list of the
-    subspaces D in C with dim(D)=r, |supp(D)|=w.
+    subspaces D in C with dim(D)=r, \|supp(D)\|=w.
     The optional parameter R allows the user to only compute the higher weight 
     spectrum for r in R. If none is given, we compute it for 1 <= r <= dim(C). 
 
@@ -938,41 +939,41 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
 
     If subspace_list=False, a dictionary 'spec', whose keys are given by r, and
     whose values are dictionaries, whose keys are the possible weights w, and
-    whose values are the number of subcodes D of C with dim(D)=r and |supp(E)|=w.
+    whose values are the number of subcodes D of C with dim(D)=r and \|supp(E)\|=w.
     If subspace_list=False, a list [spec, subsp], where 'spec' and 'subsp'
     are the dictionaries mentioned above. 
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> C = codes.GeneralizedReedSolomonCode(GF(7).list(), 4)
-    >> higher_spectrum(C)
-    {1: {4: 35, 5: 63, 6: 168, 7: 134},
-     2: {5: 21, 6: 357, 7: 2472},
-     3: {6: 7, 7: 393},
-     4: {7: 1}}
-    >> higher_spectrum(C, verbose=True) 
-    r = 1
-    Current spectrum: {4: 35, 5: 63, 6: 168, 7: 134}
-    r = 2
-    Current spectrum: {5: 21, 6: 357, 7: 2472}
-    r = 3
-    Current spectrum: {6: 7, 7: 393}
-    r = 4
-    Current spectrum: {7: 1}
-    {1: {4: 35, 5: 63, 6: 168, 7: 134},
-     2: {5: 21, 6: 357, 7: 2472},
-     3: {6: 7, 7: 393},
-     4: {7: 1}}
-    >> higher_spectrum(C, R=[2,3]) 
-    {2: {5: 21, 6: 357, 7: 2472}, 3: {6: 7, 7: 393}}
-    >> higher_spectrum(C, R=[4], subspace_list=True) 
-    [{4: {7: 1}},
-     {4: {7: [
-    [1 0 0 0 6 3 4]
-    [0 1 0 0 4 1 1]
-    [0 0 1 0 1 1 4]
-    [0 0 0 1 4 3 6]
-    ]}}]
+        sage: C = codes.GeneralizedReedSolomonCode(GF(7).list(), 4)
+        sage: higher_spectrum(C)
+        {1: {4: 35, 5: 63, 6: 168, 7: 134},
+        2: {5: 21, 6: 357, 7: 2472},
+        3: {6: 7, 7: 393},
+        4: {7: 1}}
+        sage: higher_spectrum(C, verbose=True) 
+        r = 1
+        Current spectrum: {4: 35, 5: 63, 6: 168, 7: 134}
+        r = 2
+        Current spectrum: {5: 21, 6: 357, 7: 2472}
+        r = 3
+        Current spectrum: {6: 7, 7: 393}
+        r = 4
+        Current spectrum: {7: 1}
+        {1: {4: 35, 5: 63, 6: 168, 7: 134},
+        2: {5: 21, 6: 357, 7: 2472},
+        3: {6: 7, 7: 393},
+        4: {7: 1}}
+        sage: higher_spectrum(C, R=[2,3]) 
+        {2: {5: 21, 6: 357, 7: 2472}, 3: {6: 7, 7: 393}}
+        sage: higher_spectrum(C, R=[4], subspace_list=True) 
+        [{4: {7: 1}},
+        {4: {7: [
+        [1 0 0 0 6 3 4]
+        [0 1 0 0 4 1 1]
+        [0 0 1 0 1 1 4]
+        [0 0 0 1 4 3 6]
+        ]}}]
     
     """
     K = C.base_field()
@@ -1046,7 +1047,7 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
     each possible cardinality of the support w, and whose values are the lists of 
     all subcodes of dimension r and cardinality of support w (given as matrices, 
     the corresponding subspaces are the row spaces). In other words, subsp[r][w] 
-    is a list of the subspaces D in C with dim(D)=r, |supp(D)|=w, and with trivial
+    is a list of the subspaces D in C with dim(D)=r, \|supp(D)\|=w, and with trivial
     intersection with C2.
     The optional parameter R allows the user to only compute the relative higher weight 
     spectrum for r in R. If none is given, we compute it for 1 <= r <= dim(C)-dim(C2). 
@@ -1055,38 +1056,38 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
 
     If subspace_list=False, a dictionary 'spec', whose keys are given by r, and
     whose values are dictionaries, whose keys are the possible weights w, and
-    whose values are the number of subcodes D of C with dim(D)=r and |supp(E)|=w.
+    whose values are the number of subcodes D of C with dim(D)=r and \|supp(E)\|=w.
     If subspace_list=False, a list [spec, subsp], where 'spec' and 'subsp'
     are the dictionaries mentioned above. 
 
-    EXAMPLES:
+    EXAMPLES::
     
-    >> G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
-    >> G2 = matrix(GF(2), [G[-1]])
-    >> C = LinearCode(G)
-    >> C2 = LinearCode(G2)
-    >> rhigher_spectrum(C, C2)
-    {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
-    >> rhigher_spectrum(C, C2, verbose=True)
-    r = 0
-    Spectrum: {0: 1}
-    r = 1
-    Spectrum: {3: 4, 4: 1, 6: 1}                                                                                                     
-    r = 2
-    Spectrum: {5: 2, 6: 2}                                                                                                     
-    {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
-    >> rhigher_spectrum(C, C2, R=[1])
-    {1: {3: 4, 4: 1, 6: 1}}
-    >> rhigher_spectrum(C, C2, R=[2], subspace_list=True)
-    [{2: {5: 2, 6: 2}},
-     {2: {5: [
-    [1 0 0 0 1 1]  [1 0 1 0 0 1]
-    [0 1 0 1 1 0], [0 1 1 1 0 0]
-    ],
-       6: [
-    [1 0 1 0 0 1]  [1 0 0 0 1 1]
-    [0 1 0 1 1 0], [0 1 1 1 0 0]
-    ]}}]
+        sage: G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
+        sage: G2 = matrix(GF(2), [G[-1]])
+        sage: C = LinearCode(G)
+        sage: C2 = LinearCode(G2)
+        sage: rhigher_spectrum(C, C2)
+        {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
+        sage: rhigher_spectrum(C, C2, verbose=True)
+        r = 0
+        Spectrum: {0: 1}
+        r = 1
+        Spectrum: {3: 4, 4: 1, 6: 1}                                                                                                     
+        r = 2
+        Spectrum: {5: 2, 6: 2}                                                                                                     
+        {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
+        sage: rhigher_spectrum(C, C2, R=[1])
+        {1: {3: 4, 4: 1, 6: 1}}
+        sage: rhigher_spectrum(C, C2, R=[2], subspace_list=True)
+        [{2: {5: 2, 6: 2}},
+        {2: {5: [
+        [1 0 0 0 1 1]  [1 0 1 0 0 1]
+        [0 1 0 1 1 0], [0 1 1 1 0 0]
+        ],
+        6: [
+        [1 0 1 0 0 1]  [1 0 0 0 1 1]
+        [0 1 0 1 1 0], [0 1 1 1 0 0]
+        ]}}]
 
     """
     K = C.base_field()
@@ -1183,17 +1184,17 @@ def GHW_low_mem(C, r, L=None, verbose=False):
 
     The value of the rth GHW of C. 
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> C = codes.BinaryReedMullerCode(1, 5)
-    >> GHW_low_mem(C, 2)
-    24
-    >> GHW_low_mem(C, 2, verbose=True)
-    Lower: 2 Upper: 28 Support: 2 Expected: 5
-    Subspace with cardinality of support 24 found
-    Lower: 14 Upper: 24 Support: 3 Expected: 4
-    Lower: 19 Upper: 24 Support: 4 Expected: 4
-    24
+        sage: C = codes.BinaryReedMullerCode(1, 5)
+        sage: GHW_low_mem(C, 2)
+        24
+        sage: GHW_low_mem(C, 2, verbose=True)
+        Lower: 2 Upper: 28 Support: 2 Expected: 5
+        Subspace with cardinality of support 24 found
+        Lower: 14 Upper: 24 Support: 3 Expected: 4
+        Lower: 19 Upper: 24 Support: 4 Expected: 4
+        24
     
     """
     K = C.base_field()
@@ -1318,38 +1319,39 @@ def hierarchy_low_mem(C, L=None, verbose=False):
 
     A list with the weight hierarchy of C.
 
-    EXAMPLES:
-    >> C = codes.BinaryReedMullerCode(1, 5)
-    >> hierarchy_low_mem(C)
-    [16, 24, 28, 30, 31, 32]
-    >> hierarchy_low_mem(C, verbose=True)
-    r = 1
-    Lower: 1 Upper: 27 Support: 1 Expected: 5
-    Subspace with cardinality of support 16 found
-    Lower: 9 Upper: 16 Support: 2 Expected: 3
-    Lower: 12 Upper: 16 Support: 3 Expected: 3
-    Current hierarchy: [16]
-    r = 2
-    Lower: 17 Upper: 28 Support: 2 Expected: 5
-    Subspace with cardinality of support 24 found
-    Lower: 17 Upper: 24 Support: 3 Expected: 4
-    Lower: 19 Upper: 24 Support: 4 Expected: 4
-    Current hierarchy: [16, 24]
-    r = 3
-    Lower: 25 Upper: 29 Support: 3 Expected: 5
-    Subspace with cardinality of support 28 found
-    Lower: 25 Upper: 28 Support: 4 Expected: 5
-    Lower: 25 Upper: 28 Support: 5 Expected: 5
-    Current hierarchy: [16, 24, 28]
-    r = 4
-    Lower: 29 Upper: 30 Support: 4 Expected: 5
-    Lower: 29 Upper: 30 Support: 5 Expected: 5
-    Current hierarchy: [16, 24, 28, 30]
-    r = 5
-    Current hierarchy: [16, 24, 28, 30, 31]
-    r = 6
-    Current hierarchy: [16, 24, 28, 30, 31, 32]
-    [16, 24, 28, 30, 31, 32]
+    EXAMPLES::
+
+        sage: C = codes.BinaryReedMullerCode(1, 5)
+        sage: hierarchy_low_mem(C)
+        [16, 24, 28, 30, 31, 32]
+        sage: hierarchy_low_mem(C, verbose=True)
+        r = 1
+        Lower: 1 Upper: 27 Support: 1 Expected: 5
+        Subspace with cardinality of support 16 found
+        Lower: 9 Upper: 16 Support: 2 Expected: 3
+        Lower: 12 Upper: 16 Support: 3 Expected: 3
+        Current hierarchy: [16]
+        r = 2
+        Lower: 17 Upper: 28 Support: 2 Expected: 5
+        Subspace with cardinality of support 24 found
+        Lower: 17 Upper: 24 Support: 3 Expected: 4
+        Lower: 19 Upper: 24 Support: 4 Expected: 4
+        Current hierarchy: [16, 24]
+        r = 3
+        Lower: 25 Upper: 29 Support: 3 Expected: 5
+        Subspace with cardinality of support 28 found
+        Lower: 25 Upper: 28 Support: 4 Expected: 5
+        Lower: 25 Upper: 28 Support: 5 Expected: 5
+        Current hierarchy: [16, 24, 28]
+        r = 4
+        Lower: 29 Upper: 30 Support: 4 Expected: 5
+        Lower: 29 Upper: 30 Support: 5 Expected: 5
+        Current hierarchy: [16, 24, 28, 30]
+        r = 5
+        Current hierarchy: [16, 24, 28, 30, 31]
+        r = 6
+        Current hierarchy: [16, 24, 28, 30, 31, 32]
+        [16, 24, 28, 30, 31, 32]
 
     """
     K = C.base_field()
@@ -1485,21 +1487,21 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
 
     The value of the rth RGHW of C with respect to C2. 
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
-    >> G2 = matrix(GF(2), [G[-1]])
-    >> C = LinearCode(G)
-    >> C2 = LinearCode(G2)
-    >> RGHW_low_mem(C, C2, 2)
-    5
-    >> RGHW_low_mem(C, C2, 2, verbose=True)
-    Lower: 2 Upper: 6 Support: 2 Expected: 2
-    Subspace with cardinality of support 5 found
-    5
-    >> # Note that RGHW_low_mem(C, C2, 2) can be higher than GHW(C, 2):
-    >> GHW(C, 2)
-    4
+        sage: G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
+        sage: G2 = matrix(GF(2), [G[-1]])
+        sage: C = LinearCode(G)
+        sage: C2 = LinearCode(G2)
+        sage: RGHW_low_mem(C, C2, 2)
+        5
+        sage: RGHW_low_mem(C, C2, 2, verbose=True)
+        Lower: 2 Upper: 6 Support: 2 Expected: 2
+        Subspace with cardinality of support 5 found
+        5
+        sage: # Note that RGHW_low_mem(C, C2, 2) can be higher than GHW(C, 2):
+        sage: GHW(C, 2)
+        4
     
     """
     K = C.base_field()
@@ -1637,24 +1639,24 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
 
     A list with the relative weight hierarchy of C with respect to C2.
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
-    >> G2 = matrix(GF(2), [G[-1]])
-    >> C = LinearCode(G)
-    >> C2 = LinearCode(G2)
-    >> rhierarchy_low_mem(C, C2)
-    [3, 5]
-    >> rhierarchy_low_mem(C, C2, verbose=True)
-    r = 1
-    Lower: 1 Upper: 6 Support: 1 Expected: 2
-    Subspace with cardinality of support 3 found
-    Current hierarchy: [3]
-    r = 2
-    Lower: 4 Upper: 6 Support: 2 Expected: 2
-    Subspace with cardinality of support 5 found
-    Current hierarchy: [3, 5]
-    [3, 5]
+        sage: G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
+        sage: G2 = matrix(GF(2), [G[-1]])
+        sage: C = LinearCode(G)
+        sage: C2 = LinearCode(G2)
+        sage: rhierarchy_low_mem(C, C2)
+        [3, 5]
+        sage: rhierarchy_low_mem(C, C2, verbose=True)
+        r = 1
+        Lower: 1 Upper: 6 Support: 1 Expected: 2
+        Subspace with cardinality of support 3 found
+        Current hierarchy: [3]
+        r = 2
+        Lower: 4 Upper: 6 Support: 2 Expected: 2
+        Subspace with cardinality of support 5 found
+        Current hierarchy: [3, 5]
+        [3, 5]
     
     """
     K = C.base_field()
@@ -1792,7 +1794,7 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
     cardinality of the support w, and whose values are the lists of all subcodes 
     of dimension r and cardinality of support w (given as matrices, the corresponding
     subspaces are the row spaces). In other words, subsp[r][w] is a list of the
-    subspaces D in C with dim(D)=r, |supp(D)|=w.
+    subspaces D in C with dim(D)=r, \|supp(D)\|=w.
     The optional parameter R allows the user to only compute the higher weight 
     spectrum for r in R. If none is given, we compute it for 1 <= r <= dim(C). 
     This is a version of higher_spectrum that requires less memory, at the expense 
@@ -1802,41 +1804,41 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
 
     If subspace_list=False, a dictionary 'spec', whose keys are given by r, and
     whose values are dictionaries, whose keys are the possible weights w, and
-    whose values are the number of subcodes D of C with dim(D)=r and |supp(E)|=w.
+    whose values are the number of subcodes D of C with dim(D)=r and \|supp(E)\|=w.
     If subspace_list=False, a list [spec, subsp], where 'spec' and 'subsp'
     are the dictionaries mentioned above. 
 
-    EXAMPLES:
+    EXAMPLES::
 
-    >> C = codes.GeneralizedReedSolomonCode(GF(7).list(), 4)
-    >> higher_spectrum_low_mem(C)
-    {1: {4: 35, 5: 63, 6: 168, 7: 134},
-     2: {5: 21, 6: 357, 7: 2472},
-     3: {6: 7, 7: 393},
-     4: {7: 1}}
-    >> higher_spectrum_low_mem(C, verbose=True) 
-    r = 1
-    Current spectrum: {4: 35, 5: 63, 6: 168, 7: 134}
-    r = 2
-    Current spectrum: {5: 21, 6: 357, 7: 2472}
-    r = 3
-    Current spectrum: {6: 7, 7: 393}
-    r = 4
-    Current spectrum: {7: 1}
-    {1: {4: 35, 5: 63, 6: 168, 7: 134},
-     2: {5: 21, 6: 357, 7: 2472},
-     3: {6: 7, 7: 393},
-     4: {7: 1}}
-    >> higher_spectrum_low_mem(C, R=[2,3]) 
-    {2: {5: 21, 6: 357, 7: 2472}, 3: {6: 7, 7: 393}}
-    >> higher_spectrum_low_mem(C, R=[4], subspace_list=True) 
-    [{4: {7: 1}},
-     {4: {7: [
-    [1 0 0 0 6 3 4]
-    [0 1 0 0 4 1 1]
-    [0 0 1 0 1 1 4]
-    [0 0 0 1 4 3 6]
-    ]}}]
+        sage: C = codes.GeneralizedReedSolomonCode(GF(7).list(), 4)
+        sage: higher_spectrum_low_mem(C)
+        {1: {4: 35, 5: 63, 6: 168, 7: 134},
+        2: {5: 21, 6: 357, 7: 2472},
+        3: {6: 7, 7: 393},
+        4: {7: 1}}
+        sage: higher_spectrum_low_mem(C, verbose=True) 
+        r = 1
+        Current spectrum: {4: 35, 5: 63, 6: 168, 7: 134}
+        r = 2
+        Current spectrum: {5: 21, 6: 357, 7: 2472}
+        r = 3
+        Current spectrum: {6: 7, 7: 393}
+        r = 4
+        Current spectrum: {7: 1}
+        {1: {4: 35, 5: 63, 6: 168, 7: 134},
+        2: {5: 21, 6: 357, 7: 2472},
+        3: {6: 7, 7: 393},
+        4: {7: 1}}
+        sage: higher_spectrum_low_mem(C, R=[2,3]) 
+        {2: {5: 21, 6: 357, 7: 2472}, 3: {6: 7, 7: 393}}
+        sage: higher_spectrum_low_mem(C, R=[4], subspace_list=True) 
+        [{4: {7: 1}},
+        {4: {7: [
+        [1 0 0 0 6 3 4]
+        [0 1 0 0 4 1 1]
+        [0 0 1 0 1 1 4]
+        [0 0 0 1 4 3 6]
+        ]}}]
     
     """
     K = C.base_field()
@@ -1928,7 +1930,7 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
     each possible cardinality of the support w, and whose values are the lists of 
     all subcodes of dimension r and cardinality of support w (given as matrices, 
     the corresponding subspaces are the row spaces). In other words, subsp[r][w] 
-    is a list of the subspaces D in C with dim(D)=r, |supp(D)|=w, and with trivial
+    is a list of the subspaces D in C with dim(D)=r, \|supp(D)\|=w, and with trivial
     intersection with C2.
     The optional parameter R allows the user to only compute the relative higher weight 
     spectrum for r in R. If none is given, we compute it for 1 <= r <= dim(C)-dim(C2). 
@@ -1939,38 +1941,38 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
 
     If subspace_list=False, a dictionary 'spec', whose keys are given by r, and
     whose values are dictionaries, whose keys are the possible weights w, and
-    whose values are the number of subcodes D of C with dim(D)=r and |supp(E)|=w.
+    whose values are the number of subcodes D of C with dim(D)=r and \|supp(E)\|=w.
     If subspace_list=False, a list [spec, subsp], where 'spec' and 'subsp'
     are the dictionaries mentioned above. 
 
-    EXAMPLES:
+    EXAMPLES::
     
-    >> G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
-    >> G2 = matrix(GF(2), [G[-1]])
-    >> C = LinearCode(G)
-    >> C2 = LinearCode(G2)
-    >> rhigher_spectrum_low_mem(C, C2)
-    {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
-    >> rhigher_spectrum_low_mem(C, C2, verbose=True)
-    r = 0
-    Spectrum: {0: 1}
-    r = 1
-    Spectrum: {3: 4, 4: 1, 6: 1}                                                                                                     
-    r = 2
-    Spectrum: {5: 2, 6: 2}                                                                                                     
-    {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
-    >> rhigher_spectrum_low_mem(C, C2, R=[1])
-    {1: {3: 4, 4: 1, 6: 1}}
-    >> rhigher_spectrum_low_mem(C, C2, R=[2], subspace_list=True)
-    [{2: {5: 2, 6: 2}},
-     {2: {5: [
-    [1 0 0 0 1 1]  [1 0 1 0 0 1]
-    [0 1 0 1 1 0], [0 1 1 1 0 0]
-    ],
-       6: [
-    [1 0 1 0 0 1]  [1 0 0 0 1 1]
-    [0 1 0 1 1 0], [0 1 1 1 0 0]
-    ]}}]
+        sage: G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
+        sage: G2 = matrix(GF(2), [G[-1]])
+        sage: C = LinearCode(G)
+        sage: C2 = LinearCode(G2)
+        sage: rhigher_spectrum_low_mem(C, C2)
+        {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
+        sage: rhigher_spectrum_low_mem(C, C2, verbose=True)
+        r = 0
+        Spectrum: {0: 1}
+        r = 1
+        Spectrum: {3: 4, 4: 1, 6: 1}                                                                                                     
+        r = 2
+        Spectrum: {5: 2, 6: 2}                                                                                                     
+        {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
+        sage: rhigher_spectrum_low_mem(C, C2, R=[1])
+        {1: {3: 4, 4: 1, 6: 1}}
+        sage: rhigher_spectrum_low_mem(C, C2, R=[2], subspace_list=True)
+        [{2: {5: 2, 6: 2}},
+        {2: {5: [
+        [1 0 0 0 1 1]  [1 0 1 0 0 1]
+        [0 1 0 1 1 0], [0 1 1 1 0 0]
+        ],
+        6: [
+        [1 0 1 0 0 1]  [1 0 0 0 1 1]
+        [0 1 0 1 1 0], [0 1 1 1 0 0]
+        ]}}]
 
     """
     K = C.base_field()
