@@ -2,7 +2,7 @@
 # V1.01 10/04/25
 # Author:
 # Rodrigo San-José. Contact: rodrigo.san-jose@uva.es
-# GitHub repository: https://https://github.com/RodrigoSanJose/GHW
+# GitHub repository: https://github.com/RodrigoSanJose/GHWs
 
 # This package provides functions to compute the generalized Hamming weights (GHWs)
 # of a linear code, as well as its relative generalized Hamming weights, using a
