@@ -19,7 +19,7 @@ Output: [8, 12, 14, 15, 16]
 We provide several main functions, as well as some auxiliary functions for working with generalized Hamming weights. Some of the main functions may use a noticeable amount of RAM for larger finite field sizes. We provide a low memory version of these functions that is slower in general, but with a lower RAM usage. 
   - **Main functions**: 'GHW', 'hierarchy', 'RGHW', 'rhierarchy', 'higher_spectrum', 'rhigher_spectrum', 'matrix_supp', 'subspaces', 'num_subspaces', 'wei_duality'.
   - **Low memory main functions**: 'GHW_low_mem', 'hierarchy_low_mem', 'RGHW_low_mem', 'rhierarchy_low_mem', 'higher_spectrum_low_mem', 'rhigher_spectrum_low_mem'.
-  - **Auxiliary functions**: 'vecwt', 'coltw', 'standard', 'is_cyclic', 'bch_bound', 'information'.
+  - **Auxiliary functions**: 'vecwt', 'colwt', 'standard', 'is_cyclic', 'bch_bound', 'information'.
     
 Each function has a description text that can be accessed with function_name? (for example, `hierarchy?`). This description text explains what the function does, the parameters that it requires, the format of the output, and provides examples.
 
