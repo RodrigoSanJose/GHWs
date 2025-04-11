@@ -404,9 +404,9 @@ def GHW(C, r, L=None, verbose=False):
     of information sets that covers {1,...,n}, gen_mats are the corresponding
     generator matrices of C that are systematic in those information sets, and
     redundancy is the list of the redundancies of the information sets. If none
-    is given, we use L=information(G) for a generator matrix G of C (unless the 
+    is given, we use L = information(G) for a generator matrix G of C (unless the 
     code is cyclic, in which case we use additional improvements). If we set 
-    verbose=True, real time information is provided during the excution of the 
+    verbose=True, real time information is provided during the execution of the 
     algorithm (see the example).
 
     OUTPUT:
@@ -432,7 +432,7 @@ def GHW(C, r, L=None, verbose=False):
     G = C.systematic_generator_matrix()
     if r not in range(1, k + 1):
         raise Exception('Invalid value of r')
-    # Only cyclic codes with non-repeted roots are considered
+    # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
@@ -487,11 +487,11 @@ def GHW(C, r, L=None, verbose=False):
                         MM.append([0 for z in range(r)])
                 Mtemp = matrix(MM).transpose()
                 for j in gen_reduced:
-                    soptemp = len(matrix_supp(Mtemp * j))
-                    if soptemp < ghwub:
-                        ghwub = soptemp
+                    supptemp = len(matrix_supp(Mtemp * j))
+                    if supptemp < ghwub:
+                        ghwub = supptemp
                         if verbose:
-                            print('Subspace with cardinality of support', soptemp, 'found')
+                            print('Subspace with cardinality of support', supptemp, 'found')
                         if ghwub <= ghwlb:
                             terminate = True
                             break
@@ -517,9 +517,9 @@ def hierarchy(C, L=None, verbose=False):
     of information sets that covers {1,...,n}, gen_mats are the corresponding
     generator matrices of C that are systematic in those information sets, and
     redundancy is the list of the redundancies of the information sets. If none
-    is given, we use L=information(G) for a generator matrix G of C (unless the 
+    is given, we use L = information(G) for a generator matrix G of C (unless the 
     code is cyclic, in which case we use additional improvements). If we set 
-    verbose=True, real time information is provided during the excution of the 
+    verbose=True, real time information is provided during the execution of the 
     algorithm (see the example).
 
     OUTPUT:
@@ -565,7 +565,7 @@ def hierarchy(C, L=None, verbose=False):
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
-    # Only cyclic codes with non-repeted roots are considered
+    # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
@@ -628,11 +628,11 @@ def hierarchy(C, L=None, verbose=False):
                             MM.append([0 for z in range(r)])
                     Mtemp = matrix(MM).transpose()
                     for j in gen_reduced:
-                        soptemp = len(matrix_supp(Mtemp * j))
-                        if soptemp < ghwub:
-                            ghwub = soptemp
+                        supptemp = len(matrix_supp(Mtemp * j))
+                        if supptemp < ghwub:
+                            ghwub = supptemp
                             if verbose:
-                                print('Subspace with cardinality of support', soptemp, 'found')
+                                print('Subspace with cardinality of support', supptemp, 'found')
                             if ghwub <= ghwlb:
                                 terminate = True
                                 break                    
@@ -661,10 +661,10 @@ def RGHW(C, C2, r, L=None, verbose=False):
     where inf_sets is a list of information sets for C that covers {1,...,n}, 
     gen_mats are the corresponding generator matrices of C that are systematic
     in those information sets, and redundancy is the list of the redundancies 
-    of the information sets. If none is given, we use L=information(G) for a 
+    of the information sets. If none is given, we use L = information(G) for a 
     generator matrix G of C (unless the code is cyclic, in which case we use 
     additional improvements). If we set verbose=True, real time information is 
-    provided during the excution of the algorithm (see the example).
+    provided during the execution of the algorithm (see the example).
 
     OUTPUT:
 
@@ -701,7 +701,7 @@ def RGHW(C, C2, r, L=None, verbose=False):
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():
         raise Exception('C cannot be equal to C2')
-    # Only cyclic codes with non-repeted roots are considered
+    # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
@@ -757,13 +757,13 @@ def RGHW(C, C2, r, L=None, verbose=False):
                 Mtemp = matrix(MM).transpose()
                 for j in gen_reduced:
                     Mtempj = Mtemp * j
-                    soptemp = len(matrix_supp(Mtempj))
-                    if soptemp < ghwub:
+                    supptemp = len(matrix_supp(Mtempj))
+                    if supptemp < ghwub:
                         interd = r - (H2 * Mtempj.transpose()).rank()
                         if interd == 0:
                             if verbose:
-                                print('Subspace with cardinality of support', soptemp, 'found')
-                            ghwub = soptemp
+                                print('Subspace with cardinality of support', supptemp, 'found')
+                            ghwub = supptemp
                             if ghwub <= ghwlb:
                                 terminate = True
                                 break
@@ -789,10 +789,10 @@ def rhierarchy(C, C2, L=None, verbose=False):
     where inf_sets is a list of information sets for C that covers {1,...,n}, 
     gen_mats are the corresponding generator matrices of C that are systematic
     in those information sets, and redundancy is the list of the redundancies 
-    of the information sets. If none is given, we use L=information(G) for a 
+    of the information sets. If none is given, we use L = information(G) for a 
     generator matrix G of C (unless the code is cyclic, in which case we use 
     additional improvements). If we set verbose=True, real time information is 
-    provided during the excution of the algorithm (see the example).
+    provided during the execution of the algorithm (see the example).
 
     OUTPUT:
 
@@ -830,7 +830,7 @@ def rhierarchy(C, C2, L=None, verbose=False):
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():
         raise Exception('C cannot be equal to C2')
-    # Only cyclic codes with non-repeted roots are considered
+    # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
@@ -893,13 +893,13 @@ def rhierarchy(C, C2, L=None, verbose=False):
                     Mtemp = matrix(MM).transpose()
                     for j in gen_reduced:
                         Mtempj = Mtemp * j
-                        soptemp = len(matrix_supp(Mtempj))
-                        if soptemp < ghwub:
+                        supptemp = len(matrix_supp(Mtempj))
+                        if supptemp < ghwub:
                             interd = r - (H2 * Mtempj.transpose()).rank()
                             if interd == 0:
                                 if verbose:
-                                    print('Subspace with cardinality of support', soptemp, 'found')
-                                ghwub = soptemp
+                                    print('Subspace with cardinality of support', supptemp, 'found')
+                                ghwub = supptemp
                                 if ghwub <= ghwlb:
                                     terminate = True
                                     break
@@ -924,7 +924,7 @@ def rhierarchy(C, C2, L=None, verbose=False):
 def higher_spectrum(C, verbose=False, subspace_list=False, R=None): 
     r"""
     Computes the higher weight spectrum of the code C. If we set verbose=True, 
-    real time information is provided during the excution of the algorithm
+    real time information is provided during the execution of the algorithm
     (see the example). If we set subspace_list=True, the function will also
     return a dictionary 'subsp', whose keys are equal to the corresponding r,
     and whose values are dictionaries, whose keys are equal to each possible 
@@ -1012,16 +1012,16 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
                         else:
                             MM.append([0 for z in range(r)])
                     Mtemp = matrix(MM).transpose() * G
-                    soptemp = len(matrix_supp(Mtemp))
+                    supptemp = len(matrix_supp(Mtemp))
                     try:
-                        spectemp.update({soptemp: spectemp[soptemp] + 1})
+                        spectemp.update({supptemp: spectemp[supptemp] + 1})
                     except:
-                        spectemp.update({soptemp: 1})
+                        spectemp.update({supptemp: 1})
                     if subspace_list:
                         try:
-                            subsptemp.update({soptemp: subsptemp[soptemp] + [Mtemp]})
+                            subsptemp.update({supptemp: subsptemp[supptemp] + [Mtemp]})
                         except:
-                            subsptemp.update({soptemp: [Mtemp]})
+                            subsptemp.update({supptemp: [Mtemp]})
             if verbose:
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
@@ -1040,7 +1040,7 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
 def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None): 
     r"""
     Computes the relative higher weight spectrum of the code C. If we set 
-    verbose=True, real time information is provided during the excution of 
+    verbose=True, real time information is provided during the execution of 
     the algorithm (see the example). If we set subspace_list=True, the function 
     will also return a dictionary 'subsp', whose keys are equal to the 
     corresponding r, and whose values are dictionaries, whose keys are equal to 
@@ -1137,18 +1137,18 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
                         else:
                             MM.append([0 for z in range(r)])
                     Mtemp = matrix(MM).transpose() * G
-                    soptemp = len(matrix_supp(Mtemp))
+                    supptemp = len(matrix_supp(Mtemp))
                     interd = r - (H2 * Mtemp.transpose()).rank()
                     if interd == 0:
                         try:
-                            spectemp.update({soptemp: spectemp[soptemp] + 1})
+                            spectemp.update({supptemp: spectemp[supptemp] + 1})
                         except:
-                            spectemp.update({soptemp: 1})
+                            spectemp.update({supptemp: 1})
                         if subspace_list:
                             try:
-                                subsptemp.update({soptemp: subsptemp[soptemp] + [Mtemp]})
+                                subsptemp.update({supptemp: subsptemp[supptemp] + [Mtemp]})
                             except:
-                                subsptemp.update({soptemp: [Mtemp]})
+                                subsptemp.update({supptemp: [Mtemp]})
             if verbose:
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
@@ -1174,9 +1174,9 @@ def GHW_low_mem(C, r, L=None, verbose=False):
     of information sets that covers {1,...,n}, gen_mats are the corresponding
     generator matrices of C that are systematic in those information sets, and
     redundancy is the list of the redundancies of the information sets. If none
-    is given, we use L=information(G) for a generator matrix G of C (unless the 
+    is given, we use L = information(G) for a generator matrix G of C (unless the 
     code is cyclic, in which case we use additional improvements). If we set 
-    verbose=True, real time information is provided during the excution of the 
+    verbose=True, real time information is provided during the execution of the 
     algorithm (see the example). This is a version of GHW that requires less
     memory, at the expense of speed in some cases.
 
@@ -1203,7 +1203,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
     G = C.systematic_generator_matrix()
     if r not in range(1, k + 1):
         raise Exception('Invalid value of r')
-    # Only cyclic codes with non-repeted roots are considered
+    # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
@@ -1277,11 +1277,11 @@ def GHW_low_mem(C, r, L=None, verbose=False):
                     Mtemp = matrix(K, MM).transpose()
 
                     for j in gen_reduced:
-                        soptemp = len(matrix_supp(Mtemp * j))
-                        if soptemp < ghwub:
-                            ghwub = soptemp
+                        supptemp = len(matrix_supp(Mtemp * j))
+                        if supptemp < ghwub:
+                            ghwub = supptemp
                             if verbose:
-                                print('Subspace with cardinality of support', soptemp, 'found')
+                                print('Subspace with cardinality of support', supptemp, 'found')
                             if ghwub <= ghwlb:
                                 terminate = True
                                 break
@@ -1309,9 +1309,9 @@ def hierarchy_low_mem(C, L=None, verbose=False):
     of information sets that covers {1,...,n}, gen_mats are the corresponding
     generator matrices of C that are systematic in those information sets, and
     redundancy is the list of the redundancies of the information sets. If none
-    is given, we use L=information(G) for a generator matrix G of C (unless the 
+    is given, we use L = information(G) for a generator matrix G of C (unless the 
     code is cyclic, in which case we use additional improvements). If we set 
-    verbose=True, real time information is provided during the excution of the 
+    verbose=True, real time information is provided during the execution of the 
     algorithm (see the example). This is a version of hierarchy that requires 
     less memory, at the expense of speed in some cases.
 
@@ -1358,7 +1358,7 @@ def hierarchy_low_mem(C, L=None, verbose=False):
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
-    # Only cyclic codes with non-repeted roots are considered
+    # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
@@ -1440,11 +1440,11 @@ def hierarchy_low_mem(C, L=None, verbose=False):
                         Mtemp = matrix(K, MM).transpose()
 
                         for j in gen_reduced:
-                            soptemp = len(matrix_supp(Mtemp * j))
-                            if soptemp < ghwub:
-                                ghwub = soptemp
+                            supptemp = len(matrix_supp(Mtemp * j))
+                            if supptemp < ghwub:
+                                ghwub = supptemp
                                 if verbose:
-                                    print('Subspace with cardinality of support', soptemp, 'found')
+                                    print('Subspace with cardinality of support', supptemp, 'found')
                                 if ghwub <= ghwlb:
                                     terminate = True
                                     break
@@ -1476,10 +1476,10 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
     where inf_sets is a list of information sets for C that covers {1,...,n}, 
     gen_mats are the corresponding generator matrices of C that are systematic
     in those information sets, and redundancy is the list of the redundancies 
-    of the information sets. If none is given, we use L=information(G) for a 
+    of the information sets. If none is given, we use L = information(G) for a 
     generator matrix G of C (unless the code is cyclic, in which case we use 
     additional improvements). If we set verbose=True, real time information is 
-    provided during the excution of the algorithm (see the example). This is a 
+    provided during the execution of the algorithm (see the example). This is a 
     version of RGHW that requires less memory, at the expense of speed in some 
     cases.
 
@@ -1518,7 +1518,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():
         raise Exception('C cannot be equal to C2')
-    # Only cyclic codes with non-repeted roots are considered
+    # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
@@ -1593,13 +1593,13 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
 
                     for j in gen_reduced:
                         Mtempj = Mtemp * j
-                        soptemp = len(matrix_supp(Mtempj))
-                        if soptemp < ghwub:
+                        supptemp = len(matrix_supp(Mtempj))
+                        if supptemp < ghwub:
                             interd = r - (H2 * Mtempj.transpose()).rank()
                             if interd == 0:
                                 if verbose:
-                                    print('Subspace with cardinality of support', soptemp, 'found')
-                                ghwub = soptemp
+                                    print('Subspace with cardinality of support', supptemp, 'found')
+                                ghwub = supptemp
                                 if ghwub <= ghwlb:
                                     terminate = True
                                     break
@@ -1628,10 +1628,10 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
     where inf_sets is a list of information sets for C that covers {1,...,n}, 
     gen_mats are the corresponding generator matrices of C that are systematic
     in those information sets, and redundancy is the list of the redundancies 
-    of the information sets. If none is given, we use L=information(G) for a 
+    of the information sets. If none is given, we use L = information(G) for a 
     generator matrix G of C (unless the code is cyclic, in which case we use 
     additional improvements). If we set verbose=True, real time information is 
-    provided during the excution of the algorithm (see the example). This is a 
+    provided during the execution of the algorithm (see the example). This is a 
     version of rhierarchy that requires less memory, at the expense of speed in 
     some cases.
 
@@ -1671,7 +1671,7 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():
         raise Exception('C cannot be equal to C2')
-    # Only cyclic codes with non-repeted roots are considered
+    # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
@@ -1753,13 +1753,13 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
 
                         for j in gen_reduced:
                             Mtempj = Mtemp * j
-                            soptemp = len(matrix_supp(Mtempj))
-                            if soptemp < ghwub:
+                            supptemp = len(matrix_supp(Mtempj))
+                            if supptemp < ghwub:
                                 interd = r - (H2 * Mtempj.transpose()).rank()
                                 if interd == 0:
                                     if verbose:
-                                        print('Subspace with cardinality of support', soptemp, 'found')
-                                    ghwub = soptemp
+                                        print('Subspace with cardinality of support', supptemp, 'found')
+                                    ghwub = supptemp
                                     if ghwub <= ghwlb:
                                         terminate = True
                                         break
@@ -1787,7 +1787,7 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
 def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None): 
     r"""
     Computes the higher weight spectrum of the code C. If we set verbose=True, 
-    real time information is provided during the excution of the algorithm
+    real time information is provided during the execution of the algorithm
     (see the example). If we set subspace_list=True, the function will also
     return a dictionary 'subsp', whose keys are equal to the corresponding r,
     and whose values are dictionaries, whose keys are equal to each possible 
@@ -1895,16 +1895,16 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
                                 MM.append([0 for z in range(r)])
                         
                         Mtemp = matrix(K, MM).transpose() * G
-                        soptemp = len(matrix_supp(Mtemp))
+                        supptemp = len(matrix_supp(Mtemp))
                         try:
-                            spectemp.update({soptemp: spectemp[soptemp] + 1})
+                            spectemp.update({supptemp: spectemp[supptemp] + 1})
                         except:
-                            spectemp.update({soptemp: 1})
+                            spectemp.update({supptemp: 1})
                         if subspace_list:
                             try:
-                                subsptemp.update({soptemp: subsptemp[soptemp] + [Mtemp]})
+                                subsptemp.update({supptemp: subsptemp[supptemp] + [Mtemp]})
                             except:
-                                subsptemp.update({soptemp: [Mtemp]})
+                                subsptemp.update({supptemp: [Mtemp]})
             if verbose:
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
@@ -1923,7 +1923,7 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
 def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None): 
     r"""
     Computes the relative higher weight spectrum of the code C. If we set 
-    verbose=True, real time information is provided during the excution of 
+    verbose=True, real time information is provided during the execution of 
     the algorithm (see the example). If we set subspace_list=True, the function 
     will also return a dictionary 'subsp', whose keys are equal to the 
     corresponding r, and whose values are dictionaries, whose keys are equal to 
@@ -2040,18 +2040,18 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
                                 MM.append([0 for z in range(r)])
                         
                         Mtemp = matrix(K, MM).transpose() * G
-                        soptemp = len(matrix_supp(Mtemp))
+                        supptemp = len(matrix_supp(Mtemp))
                         interd = r - (H2 * Mtemp.transpose()).rank()
                         if interd == 0:
                             try:
-                                spectemp.update({soptemp: spectemp[soptemp] + 1})
+                                spectemp.update({supptemp: spectemp[supptemp] + 1})
                             except:
-                                spectemp.update({soptemp: 1})
+                                spectemp.update({supptemp: 1})
                             if subspace_list:
                                 try:
-                                    subsptemp.update({soptemp: subsptemp[soptemp] + [Mtemp]})
+                                    subsptemp.update({supptemp: subsptemp[supptemp] + [Mtemp]})
                                 except:
-                                    subsptemp.update({soptemp: [Mtemp]})
+                                    subsptemp.update({supptemp: [Mtemp]})
             if verbose:
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
