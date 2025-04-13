@@ -21,7 +21,7 @@ We provide several main functions, as well as some auxiliary functions for worki
   - **Low memory main functions**: 'GHW_low_mem', 'hierarchy_low_mem', 'RGHW_low_mem', 'rhierarchy_low_mem', 'higher_spectrum_low_mem', 'rhigher_spectrum_low_mem'.
   - **Auxiliary functions**: 'vecwt', 'colwt', 'standard', 'is_cyclic', 'bch_bound', 'information'.
     
-Each function has a description text that can be accessed with function_name? (for example, `hierarchy?`). This description text explains what the function does, the parameters that it requires, the format of the output, and provides examples.
+Each function has a description text (docstring) that can be accessed with function_name? (for example, `hierarchy?`). This description text explains what the function does, the parameters that it requires, the format of the output, and provides examples.
 
 ## Tests
 It is possible to test that the functions are working propertly by running the test test_GHWs.sage (test_GHWs_low_mem.sage for the low memory functions). This can be done by writing `sage test_GHWs.sage`. This assumes the folder structure follows that of this repository. Otherwise, the line `load(path2)` from the test file has to be changed to specify the path of GHWs.py. The test should take between 130s and 500s, depending on whether the low memory functions are used or not and the processor's performance. The rest of the files are performance tests used to obtain the tables and graphs of the associated paper.
