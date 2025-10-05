@@ -2,7 +2,20 @@
 A Sage package for computing the generalized Hamming weights (GHWs) and the relative generalized Hamming weights (RGHWs) of linear codes. For more details about the algorithms used and the implementation, please check the associated paper in https://doi.org/10.48550/arXiv.2503.17764. 
 
 ## How to install
-Clone the repository. From the main folder GHWs, execute `sage --python -m pip install .` (depending on your installation, you may need to execute `pip install .` instead).
+Clone the repository: 
+```bash
+   git clone https://github.com/RodrigoSanJose/GHWs.git
+```
+Use pip to install the package:
+```bash
+   cd GHWs
+   sage --python -m pip install .
+```
+Depending on your Sage installation (e.g. on Arch Linux), Sage may use the system Python. In that case, simply run 
+```bash
+   cd GHWs
+   pip install .
+```
 
 ## Recommendations
 Many of the main functions in this package have a verbose argument. I recommend using `verbose=True` when doing heavy computations (for example, `hierarchy(C, verbose=True)`), since the output can be used to estimate whether the algorithm is going to finish in a reasonable amount of time or not. Moreover, since this provides the current upper and lower bounds, if upper or lower bounds are known by any other method, this information may allow to determine the GHWs before the algorithm finishes. 
