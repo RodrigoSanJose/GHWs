@@ -27,6 +27,7 @@
 
 # Required imports
 from itertools import combinations
+from sage.all import *
 
 #################################################################################
 # AUXILIARY FUNCTIONS

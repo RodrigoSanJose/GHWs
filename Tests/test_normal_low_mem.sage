@@ -2,13 +2,10 @@
 
 from sage.coding.reed_muller_code import QAryReedMullerCode
 from sage.coding.reed_muller_code import BinaryReedMullerCode
-from pathlib import Path
 
 # Load the package GHWs
 
-path1 = Path(__file__).resolve()
-path2 = path1.parent.parent / 'GHWs' / 'GHWs.py'
-load(path2)
+from GHWs import *
 
 # Naive algorithm
 
