@@ -1,15 +1,15 @@
 # GHWs
 A Sage package for computing the generalized Hamming weights (GHWs) and the relative generalized Hamming weights (RGHWs) of linear codes. For more details about the algorithms used and the implementation, please check the associated paper in https://doi.org/10.48550/arXiv.2503.17764. 
 
-## How to use
-Download GHWs.py and write `load("GHWs.py")` in Sage. Depending on your current directory, this may require specifying the path of the package, e.g., `load("/home/user/GHWs.py")`. 
+## How to install
+Clone the repository. From the main folder GHWs, execute `sage --python -m pip install .` (depending on your installation, you may need to execute `pip install .` instead).
 
 ## Recommendations
 Many of the main functions in this package have a verbose argument. I recommend using `verbose=True` when doing heavy computations (for example, `hierarchy(C, verbose=True)`), since the output can be used to estimate whether the algorithm is going to finish in a reasonable amount of time or not. Moreover, since this provides the current upper and lower bounds, if upper or lower bounds are known by any other method, this information may allow to determine the GHWs before the algorithm finishes. 
 
 ## Small example
 ```python
-load("GHWs.py")
+from GHWs import *
 C = codes.BinaryReedMullerCode(1,4)
 hierarchy(C)
 ```
@@ -24,7 +24,7 @@ We provide several main functions, as well as some auxiliary functions for worki
 Each function has a description text (docstring) that can be accessed with function_name? (for example, `hierarchy?`). This description text explains what the function does, the parameters that it requires, the format of the output, and provides examples.
 
 ## Tests
-It is possible to test that the functions are working propertly by running the test test_GHWs.sage (test_GHWs_low_mem.sage for the low memory functions). This can be done by writing `sage test_GHWs.sage`. This assumes the folder structure follows that of this repository. Otherwise, the line `load(path2)` from the test file has to be changed to specify the path of GHWs.py. The test should take between 130s and 500s, depending on whether the low memory functions are used or not and the processor's performance. The rest of the files are performance tests used to obtain the tables and graphs of the associated paper.
+It is possible to test that the functions are working propertly by running the test test_GHWs.sage (test_GHWs_low_mem.sage for the low memory functions). This can be done by writing `sage test_GHWs.sage`. The test should take between 100s and 500s, depending on whether the low memory functions are used or not and the processor's performance. The rest of the files are performance tests used to obtain the tables and graphs of the associated paper.
 
 ## Citation
 If you use this implementation, please consider citing the paper https://doi.org/10.48550/arXiv.2503.17764 and/or this repository.
