@@ -11,7 +11,7 @@ Use pip to install the package:
    cd GHWs
    sage --python -m pip install .
 ```
-Depending on your Sage installation (e.g. on Arch Linux), Sage may use the system Python. In that case, simply run 
+Depending on your Sage installation (e.g., on Arch Linux), Sage may use the system Python. In that case, simply run 
 ```bash
    cd GHWs
    pip install .
