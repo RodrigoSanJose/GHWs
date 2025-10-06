@@ -1,7 +1,7 @@
 #################################################################################
-# V1.01 10/04/25
+# V1.02 06/10/25
 # Author:
-# Rodrigo San-José. Contact: rodrigo.san-jose@uva.es
+# Rodrigo San-José. Contact: rsanjose@vt.edu
 # GitHub repository: https://github.com/RodrigoSanJose/GHWs
 
 # This package provides functions to compute the generalized Hamming weights (GHWs)
@@ -9,7 +9,7 @@
 # Brouwer-Zimmermann type of algorithm. 
 
 # ****************************************************************************
-#       Copyright (C) 2025 Rodrigo San-José <rodrigo.san-jose@uva.es>
+#       Copyright (C) 2025 Rodrigo San-José <rsanjose@vt.edu>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -26,8 +26,18 @@
 # ****************************************************************************
 
 # Required imports
+# Standard library
 from itertools import combinations
-from sage.all import *
+from copy import copy
+
+#Sage imports
+from sage.combinat.permutation import Permutation
+from sage.modules.free_module_element import vector
+from sage.arith.srange import srange
+from sage.functions.other import ceil
+from sage.categories.sets_cat import cartesian_product
+from sage.matrix.constructor import matrix
+from sage.misc.flatten import flatten
 
 #################################################################################
 # AUXILIARY FUNCTIONS

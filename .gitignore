@@ -1,0 +1,5 @@
+*.pyc
+GHWs.egg-info/dependency_links.txt
+GHWs.egg-info/PKG-INFO
+GHWs.egg-info/SOURCES.txt
+GHWs.egg-info/top_level.txt
