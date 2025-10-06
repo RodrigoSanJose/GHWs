@@ -1,13 +1,17 @@
-[project]
-name = "GHWs"
-version = "1.2"
-description = "A Sage package for computing the generalized Hamming weights of a linear code"
-authors = [{ name = "Rodrigo San-José", email = "rsanjose@vt.edu" }]
-readme = "README.md"
-
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["GHWs"]
+
+[project]
+name = "GHWs"
+version = "1.2"
+description = "A Sage package for computing the generalized Hamming weights of a linear code"
+authors = [{ name = "Rodrigo San-José", email = "rsanjose@vt.edu" }]
+license = { text = "GPL-3.0-or-later" }
+readme = "README.md"
+
+[project.urls]
+Homepage = "https://github.com/RodrigoSanJose/GHWs"
