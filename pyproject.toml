@@ -4,7 +4,6 @@ version = "1.2"
 description = "A Sage package for computing the generalized Hamming weights of a linear code"
 authors = [{ name = "Rodrigo San-José", email = "rsanjose@vt.edu" }]
 readme = "README.md"
-dependencies = ["sagemath-standard>=9.0"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
