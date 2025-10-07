@@ -38,6 +38,9 @@ from sage.functions.other import ceil
 from sage.categories.sets_cat import cartesian_product
 from sage.matrix.constructor import matrix
 from sage.misc.flatten import flatten
+from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+from sage.arith.misc import gcd
+from sage.coding.cyclic_code import CyclicCode
 
 #################################################################################
 # AUXILIARY FUNCTIONS
@@ -176,7 +179,7 @@ def bch_bound(C):
             f = f + i[j] * x**j
         F.append(f)
     g = gcd(F)
-    CC = codes.CyclicCode(generator_pol = g, length = n)
+    CC = CyclicCode(generator_pol = g, length = n)
     I = CC.defining_set()
     Ibis = I + I # We duplicate I to be able to detect consecutive elements containing
     # both 0 and n - 1
