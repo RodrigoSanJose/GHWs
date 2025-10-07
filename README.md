@@ -4,17 +4,17 @@ A Sage package for computing the generalized Hamming weights (GHWs) and the rela
 ## How to install
 This package requires having [SageMath](https://www.sagemath.org) installed. Clone the repository: 
 ```bash
-   git clone https://github.com/RodrigoSanJose/GHWs.git
+git clone https://github.com/RodrigoSanJose/GHWs.git
 ```
 Use pip to install the package:
 ```bash
-   cd GHWs
-   sage --python -m pip install .
+cd GHWs
+sage --python -m pip install .
 ```
 Depending on your Sage installation (e.g., on Arch Linux), Sage may use the system Python. In that case, simply run 
 ```bash
-   cd GHWs
-   pip install .
+cd GHWs
+pip install .
 ```
 
 ## Recommendations
