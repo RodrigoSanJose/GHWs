@@ -1,5 +1,5 @@
 # GHWs
-A Sage package for computing the generalized Hamming weights (GHWs) and the relative generalized Hamming weights (RGHWs) of linear codes. For more details about the algorithms used and the implementation, please check the associated paper in https://doi.org/10.48550/arXiv.2503.17764. 
+A Sage package for computing the generalized Hamming weights (GHWs) and the relative generalized Hamming weights (RGHWs) of linear codes. For more details about the algorithms used and the implementation, please check the associated paper in https://doi.org/10.1145/3773284. 
 
 ## How to install
 This package requires having [SageMath](https://www.sagemath.org) installed. Clone the repository: 
