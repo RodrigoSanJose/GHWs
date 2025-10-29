@@ -40,7 +40,7 @@ Each function has a description text (docstring) that can be accessed with funct
 It is possible to test that the functions are working propertly by running the test test_GHWs.sage (test_GHWs_low_mem.sage for the low memory functions). This can be done by writing `sage test_GHWs.sage`. The test should take between 100s and 500s, depending on whether the low memory functions are used or not and the processor's performance. The rest of the files are performance tests used to obtain the tables and graphs of the associated paper.
 
 ## Citation
-If you use this implementation, please consider citing the paper https://doi.org/10.48550/arXiv.2503.17764 and/or this repository.
+If you use this implementation, please consider citing the paper https://doi.org/10.1145/3773284 and/or this repository.
 
 ### Citation for the paper
 ```
