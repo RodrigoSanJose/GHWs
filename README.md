@@ -45,13 +45,10 @@ If you use this implementation, please consider citing the paper https://doi.org
 ### Citation for the paper
 ```
 @article{sanjoseGHWsPackage,
-      journal={ACM Transactions on Mathematical Software, to appear. ArXiv 2503.17764},
+      journal={ACM Transactions on Mathematical Software},
       title={An algorithm for computing generalized {H}amming weights and the {S}age package {GHW}s}, 
       author={Rodrigo San-Jos\'{e}},
       year={2025},
-      eprint={2503.17764},
-      archivePrefix={arXiv},
-      primaryClass={cs.IT}
 }
 ```
 ### Citation for the repository
