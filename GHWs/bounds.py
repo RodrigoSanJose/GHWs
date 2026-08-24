@@ -3,9 +3,9 @@
 # Rodrigo San-José. Contact: rsanjose@vt.edu
 # GitHub repository: https://github.com/RodrigoSanJose/GHWs
 
-# This module provides functions to check whether known lower or upper bounds
-# for generalized Hamming weights and relative generalized Hamming weights are
-# attained.
+# This module provides functions to check whether proposed lower or upper
+# bounds for generalized Hamming weights and relative generalized Hamming
+# weights are valid.
 
 # Required imports
 # Standard library
@@ -25,17 +25,20 @@ from .core import (
 
 def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
     r"""
-    Checks whether a known lower or upper bound for the rth GHW of C is
-    attained. The argument bound_type must be either 'lower' or 'upper'. The
-    bound is assumed to be valid. If bound_type='lower', the algorithm returns
-    True as soon as a subcode with cardinality of support equal to bound is
-    found. If bound_type='upper', the algorithm returns True as soon as the
-    lower bound obtained by the algorithm reaches bound. The optional arguments
-    L and verbose follow the same conventions as in GHW.
+    Checks whether bound is a valid lower or upper bound for the rth GHW of C.
+    The argument bound_type must be either 'lower' or 'upper'. If
+    bound_type='lower', the algorithm returns False as soon as a subcode with
+    cardinality of support lower than bound is found, and returns True as soon
+    as the lower bound for the subspaces that have not yet been enumerated
+    reaches bound. If bound_type='upper', the algorithm returns True as soon as
+    a subcode with cardinality of support at most bound is found, and returns
+    False as soon as the lower bound for the subspaces that have not yet been
+    enumerated is greater than bound. The optional arguments L and verbose
+    follow the same conventions as in GHW.
 
     OUTPUT:
 
-    True if the bound is attained, and False otherwise.
+    True if bound is a valid bound of the specified type, and False otherwise.
 
     EXAMPLES::
 
@@ -43,10 +46,14 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
         sage: GHW_bound(C, 2, 24)
         True
         sage: GHW_bound(C, 2, 23)
+        True
+        sage: GHW_bound(C, 2, 25)
         False
         sage: GHW_bound(C, 2, 24, bound_type='upper')
         True
         sage: GHW_bound(C, 2, 25, bound_type='upper')
+        True
+        sage: GHW_bound(C, 2, 23, bound_type='upper')
         False
 
     """
@@ -59,8 +66,17 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
     if bound_type not in ['lower', 'upper']:
         raise Exception("bound_type has to be either 'lower' or 'upper'")
     # The rth GHW is always between r and the generalized Singleton bound
-    if bound not in range(r, n - k + r + 1):
-        return False
+    ghwmax = n - k + r
+    if bound_type == 'lower':
+        if bound <= r:
+            return True
+        elif bound > ghwmax:
+            return False
+    else:
+        if bound < r:
+            return False
+        elif bound >= ghwmax:
+            return True
     # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
@@ -75,37 +91,41 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
             ghwlb = max(ghwlb, bch_bound(C))
         except:
             ghwlb = ghwlb
-    ghwub = n - k + r
+    ghwub = ghwmax
     if bound_type == 'lower':
-        ghwlb = max(ghwlb, bound)
-        if ghwlb > bound:
-            return False
+        if ghwlb >= bound:
+            return True
     else:
-        ghwub = min(ghwub, bound)
         if ghwlb > bound:
             return False
-    if ghwlb == ghwub:
-        return ghwub == bound
+    if ghwlb >= ghwub:
+        if bound_type == 'lower':
+            return ghwub >= bound
+        return ghwub <= bound
+    # For a lower bound we need to reach bound. For an upper bound we need to
+    # exceed bound in order to prove that no suitable subcode has support at
+    # most bound.
+    target = bound if bound_type == 'lower' else bound + 1
     w = r
     while w <= k and ghwlb < ghwub:
         # Computation of w0, the expected w to finish
         rm = []
         if cyc:
             w0 = w
-            while ceil((w0 + 1) * n / k) < ghwub:
+            while ceil((w0 + 1) * n / k) < target:
                 w0 = w0 + 1
         else:
             w0 = w - 1
             ghwlbtemp = 0
-            while ghwlbtemp < ghwub:
+            while ghwlbtemp < target:
                 ghwlbtemp = 0
                 w0 = w0 + 1
                 for j in range(len(gen)):
                     ghwlbtemp = ghwlbtemp + max((w0 + 1) - red[j], 0)
-                    if ghwlbtemp >= ghwub:
+                    if ghwlbtemp >= target:
                         if w0 == w:
                             # We store in rm the indices of the matrices that are not necessary
-                            # to get ghwlb >= ghwub at the end of this iteration (if any)
+                            # to reach target at the end of this iteration (if any)
                             rm = rm + srange(j + 1, len(gen))
                         break
         if verbose:
@@ -130,14 +150,11 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
                         ghwub = supptemp
                         if verbose:
                             print('Subspace with cardinality of support', supptemp, 'found')
-                        if bound_type == 'lower':
-                            if ghwub == bound:
-                                return True
-                            elif ghwub < bound:
-                                return False
-                        else:
+                        if bound_type == 'lower' and ghwub < bound:
                             return False
-        # Lower bound calculations
+                        elif bound_type == 'upper' and ghwub <= bound:
+                            return True
+        # Lower bound for the subspaces that have not yet been enumerated
         ghwlbtemp = 0
         for j in range(len(gen_reduced)):
             if cyc:
@@ -145,28 +162,33 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
             else:
                 ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
         ghwlb = max(ghwlb, ghwlbtemp)
-        if bound_type == 'lower' and ghwlb > bound:
+        if bound_type == 'lower' and ghwlb >= bound:
+            return True
+        elif bound_type == 'upper' and ghwlb > bound:
             return False
-        elif bound_type == 'upper' and ghwlb >= bound:
-            return ghwlb == bound
         w = w + 1
-    return ghwlb == ghwub and ghwub == bound
+    if bound_type == 'lower':
+        return ghwub >= bound
+    return ghwub <= bound
 
 
 def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
     r"""
-    Checks whether a known lower or upper bound for the rth RGHW of C with
-    respect to C2 is attained. The argument bound_type must be either 'lower' or
-    'upper'. The bound is assumed to be valid. If bound_type='lower', the
-    algorithm returns True as soon as a subcode with cardinality of support
-    equal to bound and trivial intersection with C2 is found. If
-    bound_type='upper', the algorithm returns True as soon as the lower bound
-    obtained by the algorithm reaches bound. The optional arguments L and
-    verbose follow the same conventions as in RGHW.
+    Checks whether bound is a valid lower or upper bound for the rth RGHW of C
+    with respect to C2. The argument bound_type must be either 'lower' or
+    'upper'. If bound_type='lower', the algorithm returns False as soon as a
+    subcode with cardinality of support lower than bound and trivial
+    intersection with C2 is found, and returns True as soon as the lower bound
+    for the subspaces that have not yet been enumerated reaches bound. If
+    bound_type='upper', the algorithm returns True as soon as a subcode with
+    cardinality of support at most bound and trivial intersection with C2 is
+    found, and returns False as soon as the lower bound for the subspaces that
+    have not yet been enumerated is greater than bound. The optional arguments
+    L and verbose follow the same conventions as in RGHW.
 
     OUTPUT:
 
-    True if the bound is attained, and False otherwise.
+    True if bound is a valid bound of the specified type, and False otherwise.
 
     EXAMPLES::
 
@@ -174,13 +196,17 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
         sage: G2 = matrix(GF(2), [G[-1]])
         sage: C = LinearCode(G)
         sage: C2 = LinearCode(G2)
-        sage: RGHW_bound(C, C2, 2, 5)
+        sage: RGHW_bound(C, C2, 1, 3)
         True
-        sage: RGHW_bound(C, C2, 2, 4)
+        sage: RGHW_bound(C, C2, 1, 2)
+        True
+        sage: RGHW_bound(C, C2, 1, 4)
         False
-        sage: RGHW_bound(C, C2, 2, 5, bound_type='upper')
+        sage: RGHW_bound(C, C2, 1, 3, bound_type='upper')
         True
-        sage: RGHW_bound(C, C2, 2, 6, bound_type='upper')
+        sage: RGHW_bound(C, C2, 1, 4, bound_type='upper')
+        True
+        sage: RGHW_bound(C, C2, 1, 2, bound_type='upper')
         False
 
     """
@@ -201,8 +227,17 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
     if bound_type not in ['lower', 'upper']:
         raise Exception("bound_type has to be either 'lower' or 'upper'")
     # The rth RGHW is always between r and the generalized Singleton bound
-    if bound not in range(r, n - k + r + 1):
-        return False
+    ghwmax = n - k + r
+    if bound_type == 'lower':
+        if bound <= r:
+            return True
+        elif bound > ghwmax:
+            return False
+    else:
+        if bound < r:
+            return False
+        elif bound >= ghwmax:
+            return True
     # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
@@ -217,37 +252,41 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
             ghwlb = max(ghwlb, bch_bound(C))
         except:
             ghwlb = ghwlb
-    ghwub = n - k + r
+    ghwub = ghwmax
     if bound_type == 'lower':
-        ghwlb = max(ghwlb, bound)
-        if ghwlb > bound:
-            return False
+        if ghwlb >= bound:
+            return True
     else:
-        ghwub = min(ghwub, bound)
         if ghwlb > bound:
             return False
-    if ghwlb == ghwub:
-        return ghwub == bound
+    if ghwlb >= ghwub:
+        if bound_type == 'lower':
+            return ghwub >= bound
+        return ghwub <= bound
+    # For a lower bound we need to reach bound. For an upper bound we need to
+    # exceed bound in order to prove that no suitable subcode has support at
+    # most bound.
+    target = bound if bound_type == 'lower' else bound + 1
     w = r
     while w <= k and ghwlb < ghwub:
         # Computation of w0, the expected w to finish
         rm = []
         if cyc:
             w0 = w
-            while ceil((w0 + 1) * n / k) < ghwub:
+            while ceil((w0 + 1) * n / k) < target:
                 w0 = w0 + 1
         else:
             w0 = w - 1
             ghwlbtemp = 0
-            while ghwlbtemp < ghwub:
+            while ghwlbtemp < target:
                 ghwlbtemp = 0
                 w0 = w0 + 1
                 for j in range(len(gen)):
                     ghwlbtemp = ghwlbtemp + max((w0 + 1) - red[j], 0)
-                    if ghwlbtemp >= ghwub:
+                    if ghwlbtemp >= target:
                         if w0 == w:
                             # We store in rm the indices of the matrices that are not necessary
-                            # to get ghwlb >= ghwub at the end of this iteration (if any)
+                            # to reach target at the end of this iteration (if any)
                             rm = rm + srange(j + 1, len(gen))
                         break
         if verbose:
@@ -275,14 +314,11 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
                             if verbose:
                                 print('Subspace with cardinality of support', supptemp, 'found')
                             ghwub = supptemp
-                            if bound_type == 'lower':
-                                if ghwub == bound:
-                                    return True
-                                elif ghwub < bound:
-                                    return False
-                            else:
+                            if bound_type == 'lower' and ghwub < bound:
                                 return False
-        # Lower bound calculations
+                            elif bound_type == 'upper' and ghwub <= bound:
+                                return True
+        # Lower bound for the subspaces that have not yet been enumerated
         ghwlbtemp = 0
         for j in range(len(gen_reduced)):
             if cyc:
@@ -290,29 +326,33 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
             else:
                 ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
         ghwlb = max(ghwlb, ghwlbtemp)
-        if bound_type == 'lower' and ghwlb > bound:
+        if bound_type == 'lower' and ghwlb >= bound:
+            return True
+        elif bound_type == 'upper' and ghwlb > bound:
             return False
-        elif bound_type == 'upper' and ghwlb >= bound:
-            return ghwlb == bound
         w = w + 1
-    return ghwlb == ghwub and ghwub == bound
+    if bound_type == 'lower':
+        return ghwub >= bound
+    return ghwub <= bound
 
 
 def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
     r"""
-    Checks whether a known lower or upper bound for the rth GHW of C is
-    attained. The argument bound_type must be either 'lower' or 'upper'. The
-    bound is assumed to be valid. If bound_type='lower', the algorithm returns
-    True as soon as a subcode with cardinality of support equal to bound is
-    found. If bound_type='upper', the algorithm returns True as soon as the
-    lower bound obtained by the algorithm reaches bound. The optional arguments
-    L and verbose follow the same conventions as in GHW_low_mem. This is a
-    version of GHW_bound that requires less memory, at the expense of speed in
-    some cases.
+    Checks whether bound is a valid lower or upper bound for the rth GHW of C.
+    The argument bound_type must be either 'lower' or 'upper'. If
+    bound_type='lower', the algorithm returns False as soon as a subcode with
+    cardinality of support lower than bound is found, and returns True as soon
+    as the lower bound for the subspaces that have not yet been enumerated
+    reaches bound. If bound_type='upper', the algorithm returns True as soon as
+    a subcode with cardinality of support at most bound is found, and returns
+    False as soon as the lower bound for the subspaces that have not yet been
+    enumerated is greater than bound. The optional arguments L and verbose
+    follow the same conventions as in GHW_low_mem. This is a version of
+    GHW_bound that requires less memory, at the expense of speed in some cases.
 
     OUTPUT:
 
-    True if the bound is attained, and False otherwise.
+    True if bound is a valid bound of the specified type, and False otherwise.
 
     EXAMPLES::
 
@@ -320,10 +360,14 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
         sage: GHW_bound_low_mem(C, 2, 24)
         True
         sage: GHW_bound_low_mem(C, 2, 23)
+        True
+        sage: GHW_bound_low_mem(C, 2, 25)
         False
         sage: GHW_bound_low_mem(C, 2, 24, bound_type='upper')
         True
         sage: GHW_bound_low_mem(C, 2, 25, bound_type='upper')
+        True
+        sage: GHW_bound_low_mem(C, 2, 23, bound_type='upper')
         False
 
     """
@@ -336,8 +380,17 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
     if bound_type not in ['lower', 'upper']:
         raise Exception("bound_type has to be either 'lower' or 'upper'")
     # The rth GHW is always between r and the generalized Singleton bound
-    if bound not in range(r, n - k + r + 1):
-        return False
+    ghwmax = n - k + r
+    if bound_type == 'lower':
+        if bound <= r:
+            return True
+        elif bound > ghwmax:
+            return False
+    else:
+        if bound < r:
+            return False
+        elif bound >= ghwmax:
+            return True
     # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
@@ -352,37 +405,41 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
             ghwlb = max(ghwlb, bch_bound(C))
         except:
             ghwlb = ghwlb
-    ghwub = n - k + r
+    ghwub = ghwmax
     if bound_type == 'lower':
-        ghwlb = max(ghwlb, bound)
-        if ghwlb > bound:
-            return False
+        if ghwlb >= bound:
+            return True
     else:
-        ghwub = min(ghwub, bound)
         if ghwlb > bound:
             return False
-    if ghwlb == ghwub:
-        return ghwub == bound
+    if ghwlb >= ghwub:
+        if bound_type == 'lower':
+            return ghwub >= bound
+        return ghwub <= bound
+    # For a lower bound we need to reach bound. For an upper bound we need to
+    # exceed bound in order to prove that no suitable subcode has support at
+    # most bound.
+    target = bound if bound_type == 'lower' else bound + 1
     w = r
     while w <= k and ghwlb < ghwub:
         # Computation of w0, the expected w to finish
         rm = []
         if cyc:
             w0 = w
-            while ceil((w0 + 1) * n / k) < ghwub:
+            while ceil((w0 + 1) * n / k) < target:
                 w0 = w0 + 1
         else:
             w0 = w - 1
             ghwlbtemp = 0
-            while ghwlbtemp < ghwub:
+            while ghwlbtemp < target:
                 ghwlbtemp = 0
                 w0 = w0 + 1
                 for j in range(len(gen)):
                     ghwlbtemp = ghwlbtemp + max((w0 + 1) - red[j], 0)
-                    if ghwlbtemp >= ghwub:
+                    if ghwlbtemp >= target:
                         if w0 == w:
                             # We store in rm the indices of the matrices that are not necessary
-                            # to get ghwlb >= ghwub at the end of this iteration (if any)
+                            # to reach target at the end of this iteration (if any)
                             rm = rm + srange(j + 1, len(gen))
                         break
         if verbose:
@@ -426,14 +483,11 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
                             ghwub = supptemp
                             if verbose:
                                 print('Subspace with cardinality of support', supptemp, 'found')
-                            if bound_type == 'lower':
-                                if ghwub == bound:
-                                    return True
-                                elif ghwub < bound:
-                                    return False
-                            else:
+                            if bound_type == 'lower' and ghwub < bound:
                                 return False
-        # Lower bound calculations
+                            elif bound_type == 'upper' and ghwub <= bound:
+                                return True
+        # Lower bound for the subspaces that have not yet been enumerated
         ghwlbtemp = 0
         for j in range(len(gen_reduced)):
             if cyc:
@@ -441,29 +495,35 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
             else:
                 ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
         ghwlb = max(ghwlb, ghwlbtemp)
-        if bound_type == 'lower' and ghwlb > bound:
+        if bound_type == 'lower' and ghwlb >= bound:
+            return True
+        elif bound_type == 'upper' and ghwlb > bound:
             return False
-        elif bound_type == 'upper' and ghwlb >= bound:
-            return ghwlb == bound
         w = w + 1
-    return ghwlb == ghwub and ghwub == bound
+    if bound_type == 'lower':
+        return ghwub >= bound
+    return ghwub <= bound
 
 
 def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
     r"""
-    Checks whether a known lower or upper bound for the rth RGHW of C with
-    respect to C2 is attained. The argument bound_type must be either 'lower' or
-    'upper'. The bound is assumed to be valid. If bound_type='lower', the
-    algorithm returns True as soon as a subcode with cardinality of support
-    equal to bound and trivial intersection with C2 is found. If
-    bound_type='upper', the algorithm returns True as soon as the lower bound
-    obtained by the algorithm reaches bound. The optional arguments L and
-    verbose follow the same conventions as in RGHW_low_mem. This is a version of
-    RGHW_bound that requires less memory, at the expense of speed in some cases.
+    Checks whether bound is a valid lower or upper bound for the rth RGHW of C
+    with respect to C2. The argument bound_type must be either 'lower' or
+    'upper'. If bound_type='lower', the algorithm returns False as soon as a
+    subcode with cardinality of support lower than bound and trivial
+    intersection with C2 is found, and returns True as soon as the lower bound
+    for the subspaces that have not yet been enumerated reaches bound. If
+    bound_type='upper', the algorithm returns True as soon as a subcode with
+    cardinality of support at most bound and trivial intersection with C2 is
+    found, and returns False as soon as the lower bound for the subspaces that
+    have not yet been enumerated is greater than bound. The optional arguments
+    L and verbose follow the same conventions as in RGHW_low_mem. This is a
+    version of RGHW_bound that requires less memory, at the expense of speed in
+    some cases.
 
     OUTPUT:
 
-    True if the bound is attained, and False otherwise.
+    True if bound is a valid bound of the specified type, and False otherwise.
 
     EXAMPLES::
 
@@ -471,13 +531,17 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
         sage: G2 = matrix(GF(2), [G[-1]])
         sage: C = LinearCode(G)
         sage: C2 = LinearCode(G2)
-        sage: RGHW_bound_low_mem(C, C2, 2, 5)
+        sage: RGHW_bound_low_mem(C, C2, 1, 3)
         True
-        sage: RGHW_bound_low_mem(C, C2, 2, 4)
+        sage: RGHW_bound_low_mem(C, C2, 1, 2)
+        True
+        sage: RGHW_bound_low_mem(C, C2, 1, 4)
         False
-        sage: RGHW_bound_low_mem(C, C2, 2, 5, bound_type='upper')
+        sage: RGHW_bound_low_mem(C, C2, 1, 3, bound_type='upper')
         True
-        sage: RGHW_bound_low_mem(C, C2, 2, 6, bound_type='upper')
+        sage: RGHW_bound_low_mem(C, C2, 1, 4, bound_type='upper')
+        True
+        sage: RGHW_bound_low_mem(C, C2, 1, 2, bound_type='upper')
         False
 
     """
@@ -498,8 +562,17 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
     if bound_type not in ['lower', 'upper']:
         raise Exception("bound_type has to be either 'lower' or 'upper'")
     # The rth RGHW is always between r and the generalized Singleton bound
-    if bound not in range(r, n - k + r + 1):
-        return False
+    ghwmax = n - k + r
+    if bound_type == 'lower':
+        if bound <= r:
+            return True
+        elif bound > ghwmax:
+            return False
+    else:
+        if bound < r:
+            return False
+        elif bound >= ghwmax:
+            return True
     # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
@@ -514,37 +587,41 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
             ghwlb = max(ghwlb, bch_bound(C))
         except:
             ghwlb = ghwlb
-    ghwub = n - k + r
+    ghwub = ghwmax
     if bound_type == 'lower':
-        ghwlb = max(ghwlb, bound)
-        if ghwlb > bound:
-            return False
+        if ghwlb >= bound:
+            return True
     else:
-        ghwub = min(ghwub, bound)
         if ghwlb > bound:
             return False
-    if ghwlb == ghwub:
-        return ghwub == bound
+    if ghwlb >= ghwub:
+        if bound_type == 'lower':
+            return ghwub >= bound
+        return ghwub <= bound
+    # For a lower bound we need to reach bound. For an upper bound we need to
+    # exceed bound in order to prove that no suitable subcode has support at
+    # most bound.
+    target = bound if bound_type == 'lower' else bound + 1
     w = r
     while w <= k and ghwlb < ghwub:
         # Computation of w0, the expected w to finish
         rm = []
         if cyc:
             w0 = w
-            while ceil((w0 + 1) * n / k) < ghwub:
+            while ceil((w0 + 1) * n / k) < target:
                 w0 = w0 + 1
         else:
             w0 = w - 1
             ghwlbtemp = 0
-            while ghwlbtemp < ghwub:
+            while ghwlbtemp < target:
                 ghwlbtemp = 0
                 w0 = w0 + 1
                 for j in range(len(gen)):
                     ghwlbtemp = ghwlbtemp + max((w0 + 1) - red[j], 0)
-                    if ghwlbtemp >= ghwub:
+                    if ghwlbtemp >= target:
                         if w0 == w:
                             # We store in rm the indices of the matrices that are not necessary
-                            # to get ghwlb >= ghwub at the end of this iteration (if any)
+                            # to reach target at the end of this iteration (if any)
                             rm = rm + srange(j + 1, len(gen))
                         break
         if verbose:
@@ -591,14 +668,11 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
                                 if verbose:
                                     print('Subspace with cardinality of support', supptemp, 'found')
                                 ghwub = supptemp
-                                if bound_type == 'lower':
-                                    if ghwub == bound:
-                                        return True
-                                    elif ghwub < bound:
-                                        return False
-                                else:
+                                if bound_type == 'lower' and ghwub < bound:
                                     return False
-        # Lower bound calculations
+                                elif bound_type == 'upper' and ghwub <= bound:
+                                    return True
+        # Lower bound for the subspaces that have not yet been enumerated
         ghwlbtemp = 0
         for j in range(len(gen_reduced)):
             if cyc:
@@ -606,9 +680,11 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
             else:
                 ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
         ghwlb = max(ghwlb, ghwlbtemp)
-        if bound_type == 'lower' and ghwlb > bound:
+        if bound_type == 'lower' and ghwlb >= bound:
+            return True
+        elif bound_type == 'upper' and ghwlb > bound:
             return False
-        elif bound_type == 'upper' and ghwlb >= bound:
-            return ghwlb == bound
         w = w + 1
-    return ghwlb == ghwub and ghwub == bound
+    if bound_type == 'lower':
+        return ghwub >= bound
+    return ghwub <= bound
