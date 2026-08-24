@@ -1,7 +1,7 @@
 # Load the package GHWs and the version 3 bound functions
 
 from GHWs import *
-from GHWs.bounds_v3 import (
+from GHWs.bounds import (
     GHW_bound, RGHW_bound, GHW_bound_low_mem, RGHW_bound_low_mem
 )
 
