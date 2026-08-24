@@ -1,10 +1,12 @@
-# Load the package GHWs and the version 3 bound functions
+# Required imports
+
+import time
+
+# Load the package GHWs
 
 from GHWs import *
-from GHWs.bounds import (
-    GHW_bound, RGHW_bound, GHW_bound_low_mem, RGHW_bound_low_mem
-)
 
+start = time.time()
 # We test lower and upper bounds for GHWs with a Reed-Solomon code
 
 K = GF(7)
@@ -77,3 +79,6 @@ if GHW(C, 1, L=L) != 2 or GHW(C, 2, L=L) != 4:
     raise Exception('Unexpected GHWs in bound test example')
 if RGHW(C, C2, 1, L=L) != 3 or RGHW(C, C2, 2, L=L) != 5:
     raise Exception('Unexpected RGHWs in bound test example')
+
+end = time.time()
+print('Total time:', end - start)
