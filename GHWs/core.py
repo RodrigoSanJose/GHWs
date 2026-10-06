@@ -1,5 +1,5 @@
 #################################################################################
-# V1.2 06/10/25
+# V1.2.1 05/10/26
 # Author:
 # Rodrigo San-José. Contact: rsanjose@vt.edu
 # GitHub repository: https://github.com/RodrigoSanJose/GHWs
@@ -32,6 +32,7 @@ from copy import copy
 
 #Sage imports
 from sage.combinat.permutation import Permutation
+from sage.combinat.q_analogues import gaussian_binomial
 from sage.modules.free_module_element import vector
 from sage.arith.srange import srange
 from sage.functions.other import ceil
@@ -39,7 +40,7 @@ from sage.categories.sets_cat import cartesian_product
 from sage.matrix.constructor import matrix
 from sage.misc.flatten import flatten
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
-from sage.arith.misc import gcd
+from sage.arith.misc import gcd, binomial
 from sage.coding.cyclic_code import CyclicCode
 
 #################################################################################
@@ -187,7 +188,7 @@ def bch_bound(C):
     for i in range(len(I)):
         consecutive = 0
         for j in range(len(I)):
-            if (I[i] + j in Ibis) % n: 
+            if (I[i] + j) % n in Ibis: 
                 consecutive = consecutive + 1
             else:
                 break
@@ -487,7 +488,7 @@ def GHW(C, r, L=None, verbose=False):
             print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
             
         # These are the only matrices that contribute       
-        gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm] 
+        gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm] 
         terminate = False
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         for y in combinations(range(k), w): # All possible supports of weight w
@@ -519,7 +520,7 @@ def GHW(C, r, L=None, verbose=False):
             if cyc:
                 ghwlbtemp = ceil((w + 1) * n / k)
             else:
-                ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
+                ghwlbtemp = ghwlbtemp + max((w + 1) - red[j], 0)
         ghwlb = max(ghwlb, ghwlbtemp)
         w = w + 1
     return ghwub
@@ -628,7 +629,7 @@ def hierarchy(C, L=None, verbose=False):
                 print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
                 
             # These are the only matrices that contribute       
-            gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm] 
+            gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm] 
             terminate = False
             rrefs = subspaces(r, w, w, K)  # All reduced row echelon forms in the first w columns
             for y in combinations(range(k), w): # All possible supports of weight w
@@ -660,7 +661,7 @@ def hierarchy(C, L=None, verbose=False):
                 if cyc:
                     ghwlbtemp = ceil((w + 1) * n / k)
                 else:
-                    ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
+                    ghwlbtemp = ghwlbtemp + max((w + 1) - red[j], 0)
             ghwlb = max(ghwlbtemp, ghwlb)
             w = w + 1
         hierarchyghw.append(ghwub)
@@ -716,7 +717,7 @@ def RGHW(C, C2, r, L=None, verbose=False):
     elif C.dimension() == C2.dimension():
         raise Exception('C cannot be equal to C2')
     # Only cyclic codes with non-repeated roots are considered
-    cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
+    cyc = is_cyclic(C) and is_cyclic(C2) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
             L = [[i + 1 for i in range(k)], [G], [0]] 
@@ -756,7 +757,7 @@ def RGHW(C, C2, r, L=None, verbose=False):
             print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
             
         # These are the only matrices that contribute       
-        gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm] 
+        gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm] 
         terminate = False
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         for y in combinations(range(k), w): # All possible supports of weight w
@@ -791,7 +792,7 @@ def RGHW(C, C2, r, L=None, verbose=False):
             if cyc:
                 ghwlbtemp = ceil((w + 1) * n / k)
             else:
-                ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
+                ghwlbtemp = ghwlbtemp + max((w + 1) - red[j], 0)
         ghwlb = max(ghwlb, ghwlbtemp)
         w = w + 1
     return ghwub
@@ -845,7 +846,7 @@ def rhierarchy(C, C2, L=None, verbose=False):
     elif C.dimension() == C2.dimension():
         raise Exception('C cannot be equal to C2')
     # Only cyclic codes with non-repeated roots are considered
-    cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
+    cyc = is_cyclic(C) and is_cyclic(C2) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
             L = [[i + 1 for i in range(k)], [G], [0]]
@@ -892,7 +893,7 @@ def rhierarchy(C, C2, L=None, verbose=False):
                 print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
                 
             # These are the only matrices that contribute       
-            gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm] 
+            gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm] 
             terminate = False
             rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
             for y in combinations(range(k), w): # All possible supports of weight w
@@ -927,7 +928,7 @@ def rhierarchy(C, C2, L=None, verbose=False):
                 if cyc:
                     ghwlbtemp = ceil((w + 1) * n / k)
                 else:
-                    ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
+                    ghwlbtemp = ghwlbtemp + max((w + 1) - red[j], 0)
             ghwlb = max(ghwlbtemp, ghwlb)
             w = w + 1
         hierarchyrghw.append(ghwub)
@@ -1007,7 +1008,7 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
             spec.update({0: spectemp})
             if subspace_list:
                 subsptemp = {0: [matrix(K, [0 for i in range(n)])]}
-                subsp = {0: subsptemp}
+                subsp.update({0: subsptemp})
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue 
@@ -1132,7 +1133,7 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
             spec.update({0: spectemp})
             if subspace_list:
                 subsptemp = {0: [matrix(K, [0 for i in range(n)])]}
-                subsp = {0: subsptemp}
+                subsp.update({0: subsptemp})
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue  
@@ -1258,7 +1259,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
             print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
             
         # These are the only matrices that contribute       
-        gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm] 
+        gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm] 
         terminate = False
         y = range(w) # We start with support {1,...,w}
         for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
@@ -1311,7 +1312,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
             if cyc:
                 ghwlbtemp = ceil((w + 1) * n / k)
             else:
-                ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
+                ghwlbtemp = ghwlbtemp + max((w + 1) - red[j], 0)
         ghwlb = max(ghwlb, ghwlbtemp)
         w = w + 1
     return ghwub
@@ -1421,7 +1422,7 @@ def hierarchy_low_mem(C, L=None, verbose=False):
                 print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
                 
             # These are the only matrices that contribute       
-            gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm] 
+            gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm] 
             terminate = False
             y = range(w) # We start with support {1,...,w}
             for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
@@ -1475,7 +1476,7 @@ def hierarchy_low_mem(C, L=None, verbose=False):
                 if cyc:
                     ghwlbtemp = ceil((w + 1) * n / k)
                 else:
-                    ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
+                    ghwlbtemp = ghwlbtemp + max((w + 1) - red[j], 0)
             ghwlb = max(ghwlbtemp, ghwlb)
             w = w + 1
         hierarchyghw.append(ghwub)
@@ -1533,7 +1534,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
     elif C.dimension() == C2.dimension():
         raise Exception('C cannot be equal to C2')
     # Only cyclic codes with non-repeated roots are considered
-    cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
+    cyc = is_cyclic(C) and is_cyclic(C2) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
             L = [[i + 1 for i in range(k)], [G], [0]] 
@@ -1573,7 +1574,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
             print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
             
         # These are the only matrices that contribute 
-        gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm] 
+        gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm] 
         terminate = False
         y = range(w) # We start with support {1,...,w}
         for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
@@ -1630,7 +1631,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
             if cyc:
                 ghwlbtemp = ceil((w + 1) * n / k)
             else:
-                ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
+                ghwlbtemp = ghwlbtemp + max((w + 1) - red[j], 0)
         ghwlb = max(ghwlb, ghwlbtemp)
         w = w + 1
     return ghwub
@@ -1686,7 +1687,7 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
     elif C.dimension() == C2.dimension():
         raise Exception('C cannot be equal to C2')
     # Only cyclic codes with non-repeated roots are considered
-    cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
+    cyc = is_cyclic(C) and is_cyclic(C2) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
             L = [[i + 1 for i in range(k)], [G], [0]]
@@ -1733,7 +1734,7 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
                 print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
                 
             # These are the only matrices that contribute   
-            gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm] 
+            gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm] 
             terminate = False
             y = range(w) # We start with support {1,...,w}
             for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
@@ -1790,7 +1791,7 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
                 if cyc:
                     ghwlbtemp = ceil((w + 1) * n / k)
                 else:
-                    ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
+                    ghwlbtemp = ghwlbtemp + max((w + 1) - red[j], 0)
             ghwlb = max(ghwlbtemp, ghwlb)
             w = w + 1
         hierarchyrghw.append(ghwub)
@@ -1872,7 +1873,7 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
             spec.update({0: spectemp})
             if subspace_list:
                 subsptemp = {0: [matrix(K, [0 for i in range(n)])]}
-                subsp = {0: subsptemp}
+                subsp.update({0: subsptemp})
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue 
@@ -2017,7 +2018,7 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
             spec.update({0: spectemp})
             if subspace_list:
                 subsptemp = {0: [matrix(K, [0 for i in range(n)])]}
-                subsp = {0: subsptemp}
+                subsp.update({0: subsptemp})
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue  

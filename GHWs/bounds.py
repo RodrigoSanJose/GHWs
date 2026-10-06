@@ -132,7 +132,7 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
             print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
 
         # These are the only matrices that contribute
-        gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm]
+        gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         for y in combinations(range(k), w): # All possible supports of weight w
             for mat in rrefs:
@@ -160,7 +160,7 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
             if cyc:
                 ghwlbtemp = ceil((w + 1) * n / k)
             else:
-                ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
+                ghwlbtemp = ghwlbtemp + max((w + 1) - red[j], 0)
         ghwlb = max(ghwlb, ghwlbtemp)
         if bound_type == 'lower' and ghwlb >= bound:
             return True
@@ -239,7 +239,7 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
         elif bound >= ghwmax:
             return True
     # Only cyclic codes with non-repeated roots are considered
-    cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
+    cyc = is_cyclic(C) and is_cyclic(C2) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
             L = [[i + 1 for i in range(k)], [G], [0]]
@@ -293,7 +293,7 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
             print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
 
         # These are the only matrices that contribute
-        gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm]
+        gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         for y in combinations(range(k), w): # All possible supports of weight w
             for mat in rrefs:
@@ -324,7 +324,7 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
             if cyc:
                 ghwlbtemp = ceil((w + 1) * n / k)
             else:
-                ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
+                ghwlbtemp = ghwlbtemp + max((w + 1) - red[j], 0)
         ghwlb = max(ghwlb, ghwlbtemp)
         if bound_type == 'lower' and ghwlb >= bound:
             return True
@@ -446,7 +446,7 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
             print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
 
         # These are the only matrices that contribute
-        gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm]
+        gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
         y = range(w) # We start with support {1,...,w}
         for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
             # position, and we choose r - 1 more pivots
@@ -493,7 +493,7 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
             if cyc:
                 ghwlbtemp = ceil((w + 1) * n / k)
             else:
-                ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
+                ghwlbtemp = ghwlbtemp + max((w + 1) - red[j], 0)
         ghwlb = max(ghwlb, ghwlbtemp)
         if bound_type == 'lower' and ghwlb >= bound:
             return True
@@ -574,7 +574,7 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
         elif bound >= ghwmax:
             return True
     # Only cyclic codes with non-repeated roots are considered
-    cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
+    cyc = is_cyclic(C) and is_cyclic(C2) and list(G.pivots()) == srange(k)
     if L is None:
         if cyc:
             L = [[i + 1 for i in range(k)], [G], [0]]
@@ -628,7 +628,7 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
             print('Lower:', ghwlb, 'Upper:', ghwub, 'Support:', w, 'Expected:', w0)
 
         # These are the only matrices that contribute
-        gen_reduced = [gen[j] for j in range(len(gen)) if red[j] <= w and j not in rm]
+        gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
         y = range(w) # We start with support {1,...,w}
         for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
             # position, and we choose r - 1 more pivots
@@ -678,7 +678,7 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
             if cyc:
                 ghwlbtemp = ceil((w + 1) * n / k)
             else:
-                ghwlbtemp = ghwlbtemp + (w + 1) - red[j]
+                ghwlbtemp = ghwlbtemp + max((w + 1) - red[j], 0)
         ghwlb = max(ghwlb, ghwlbtemp)
         if bound_type == 'lower' and ghwlb >= bound:
             return True

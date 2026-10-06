@@ -7,7 +7,7 @@ packages = ["GHWs"]
 
 [project]
 name = "GHWs"
-version = "1.2"
+version = "1.2.1"
 description = "A Sage package for computing the generalized Hamming weights of a linear code"
 authors = [{ name = "Rodrigo San-José", email = "rsanjose@vt.edu" }]
 license = { text = "GPL-3.0-or-later" }
