@@ -424,9 +424,11 @@ def GHW(C, r, L=None, verbose=False):
     is given, we use L = information(G) for a generator matrix G of C (unless the 
     code is cyclic, in which case we use additional improvements). If we set 
     verbose=True, real time information is provided during the execution of the 
-    algorithm (see the example). Wei duality cannot be used to obtain a single
-    GHW. If 2k > n and several GHWs are needed, it is usually faster to compute
-    the whole weight hierarchy (see the argument strategy of hierarchy).
+    algorithm (see the example). This function always works with C directly:
+    by Wei duality, a GHW of C is determined by the largest GHWs of the dual
+    code, which usually requires computing several of them. If 2k > n and
+    several GHWs are needed, it is usually faster to compute the whole weight
+    hierarchy (see the argument strategy of hierarchy).
 
     OUTPUT:
 
@@ -551,7 +553,8 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
     not given, and 'direct' otherwise. Both strategies give the same result,
     but this choice is a heuristic: the computation with the smaller dimension
     is usually faster, although not always. The argument L cannot be used with
-    strategy='dual', since it refers to C and not to its dual.
+    strategy='dual', since it refers to C and not to its dual. With the dual
+    strategy, the bounds printed by verbose=True refer to the dual code.
 
     OUTPUT:
 
@@ -609,7 +612,7 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
         # We compute the hierarchy of the dual of C punctured on its support,
         # which has dimension nsupp - k, and then we use Wei duality
         if verbose:
-            print('Computing the hierarchy of the dual code, of dimension', nsupp - k)
+            print('Computing the hierarchy of the dual of C punctured on its support, of dimension', nsupp - k)
         if k == nsupp: # In this case, the dual is the zero code
             hierarchyghw = list(range(1, nsupp + 1))
         else:
@@ -1231,10 +1234,11 @@ def GHW_low_mem(C, r, L=None, verbose=False):
     code is cyclic, in which case we use additional improvements). If we set 
     verbose=True, real time information is provided during the execution of the 
     algorithm (see the example). This is a version of GHW that requires less
-    memory, at the expense of speed in some cases. Wei duality cannot be used
-    to obtain a single GHW. If 2k > n and several GHWs are needed, it is usually
-    faster to compute the whole weight hierarchy (see the argument strategy of
-    hierarchy_low_mem).
+    memory, at the expense of speed in some cases. This function always works
+    with C directly: by Wei duality, a GHW of C is determined by the largest
+    GHWs of the dual code, which usually requires computing several of them.
+    If 2k > n and several GHWs are needed, it is usually faster to compute the
+    whole weight hierarchy (see the argument strategy of hierarchy_low_mem).
 
     OUTPUT:
 
@@ -1381,7 +1385,8 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
     not given, and 'direct' otherwise. Both strategies give the same result,
     but this choice is a heuristic: the computation with the smaller dimension
     is usually faster, although not always. The argument L cannot be used with
-    strategy='dual', since it refers to C and not to its dual.
+    strategy='dual', since it refers to C and not to its dual. With the dual
+    strategy, the bounds printed by verbose=True refer to the dual code.
 
     OUTPUT:
 
@@ -1439,7 +1444,7 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
         # We compute the hierarchy of the dual of C punctured on its support,
         # which has dimension nsupp - k, and then we use Wei duality
         if verbose:
-            print('Computing the hierarchy of the dual code, of dimension', nsupp - k)
+            print('Computing the hierarchy of the dual of C punctured on its support, of dimension', nsupp - k)
         if k == nsupp: # In this case, the dual is the zero code
             hierarchyghw = list(range(1, nsupp + 1))
         else:

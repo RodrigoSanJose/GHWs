@@ -57,7 +57,7 @@ q = 13
 K = GF(q)
 for k in range(1, 13):
     C = codes.GeneralizedReedSolomonCode(K.list(), k)
-    print('k =', k, 'hierarchy:', timeit('hierarchy(C)', precision=10, number=20, repeat=5))
+    print('k =', k, 'hierarchy:', timeit("hierarchy(C, strategy='direct')", precision=10, number=20, repeat=5))
     print('k =', k, 'GHW:', timeit('[GHW(C, r) for r in range(1, k + 1)]', precision=10, number=20, repeat=5))
     print('-'*60)
 
@@ -73,6 +73,6 @@ for q in Q:
         C = BinaryReedMullerCode(d, 3)
     else:
         C = QAryReedMullerCode(GF(q), d, m)
-    print('q =', q, 'hierarchy:', timeit('hierarchy(C)', precision=10, number=20, repeat=5))
+    print('q =', q, 'hierarchy:', timeit("hierarchy(C, strategy='direct')", precision=10, number=20, repeat=5))
     print('q =', q, 'GHW:', timeit('[GHW(C, r) for r in range(1, C.dimension() + 1)]', precision=10, number=20, repeat=5))
     print('-'*60)
