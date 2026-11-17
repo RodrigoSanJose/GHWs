@@ -110,17 +110,24 @@ from io import StringIO
 K = GF(2)
 H = codes.BCHCode(K, 7, 3).generator_matrix() # [7, 4, 3] cyclic Hamming code
 R = codes.BinaryReedMullerCode(1, 3).generator_matrix() # [8, 4, 4] code
+
+def auto_route(C, L=None): # Hierarchy given by 'auto', and whether it used the dual code
+    out = StringIO()
+    with redirect_stdout(out):
+        hie = hierarchy(C, L=L, verbose=True)
+    return hie, 'Wei duality' in out.getvalue()
+
 # Each test: generator matrix, weight hierarchy, and whether 'auto' uses the dual code
 tests = [(H, [3, 5, 6, 7], True), (H.augment(matrix(K, 4, 2)), [3, 5, 6, 7], True), (R, [4, 6, 7, 8], False),
          (R.block_sum(matrix(K, [[1]])), [1, 5, 7, 8, 9], True),
          (identity_matrix(K, 3).augment(matrix(K, 3, 1)), [1, 2, 3], True)]
 for G, hie, dual in tests:
     C = LinearCode(G)
-    out = StringIO()
-    with redirect_stdout(out): # The verbose output shows which strategy 'auto' chooses
-        auto = hierarchy(C, verbose=True)
-    if not auto == hie or ('Wei duality' in out.getvalue()) != dual or not all(hierarchy(C, strategy=s) == hie for s in ['direct', 'dual']) or not hie == [GHW(C, r) for r in srange(1, C.dimension() + 1)]:
+    if not auto_route(C) == (hie, dual) or not all(hierarchy(C, strategy=s) == hie for s in ['direct', 'dual']) or not hie == [GHW(C, r) for r in srange(1, C.dimension() + 1)]:
         raise Exception("Error with the strategies of hierarchy")
+# With L given, 'auto' uses the direct route, although 2k > n for H
+if not auto_route(LinearCode(H), information(H)) == ([3, 5, 6, 7], False):
+    raise Exception("Error with the strategies of hierarchy")
 for args in [{'L': information(H), 'strategy': 'dual'}, {'strategy': 'other'}]:
     try:
         hierarchy(LinearCode(H), **args)
