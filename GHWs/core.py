@@ -305,7 +305,7 @@ def matrix_supp(M):
 
         sage: M = matrix(GF(2), [[1,0,1,0],[1,1,0,0]])
         sage: matrix_supp(M)
-        {0,1,2}
+        {0, 1, 2}
     
     """
     sup = set()
@@ -397,8 +397,7 @@ def wei_duality(L, n=None):
     When provided with L, a list with the weight hierarchy of a code C, it
     computes the GHWs of the dual via Wei duality. The optional argument n 
     is the length of the code C. If none is given, we assume the length of C
-    is equal to L[-1], i.e., C is non-degenerate. If C may be degenerate,
-    n has to be given.
+    is equal to L[-1], i.e., C is non-degenerate.
 
     OUTPUT:
 
@@ -443,7 +442,7 @@ def GHW(C, r, L=None, verbose=False):
         Lower: 2 Upper: 28 Support: 2 Expected: 5
         Subspace with cardinality of support 24 found
         Lower: 14 Upper: 24 Support: 3 Expected: 4
-        Lower: 19 Upper: 24 Support: 4 Expected: 4
+        Lower: 20 Upper: 24 Support: 4 Expected: 4
         24
     
     """
@@ -570,19 +569,19 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
         Lower: 1 Upper: 27 Support: 1 Expected: 5
         Subspace with cardinality of support 16 found
         Lower: 9 Upper: 16 Support: 2 Expected: 3
-        Lower: 12 Upper: 16 Support: 3 Expected: 3
+        Lower: 14 Upper: 16 Support: 3 Expected: 3
         Current hierarchy: [16]
         r = 2
         Lower: 17 Upper: 28 Support: 2 Expected: 5
         Subspace with cardinality of support 24 found
         Lower: 17 Upper: 24 Support: 3 Expected: 4
-        Lower: 19 Upper: 24 Support: 4 Expected: 4
+        Lower: 20 Upper: 24 Support: 4 Expected: 4
         Current hierarchy: [16, 24]
         r = 3
         Lower: 25 Upper: 29 Support: 3 Expected: 5
         Subspace with cardinality of support 28 found
         Lower: 25 Upper: 28 Support: 4 Expected: 5
-        Lower: 25 Upper: 28 Support: 5 Expected: 5
+        Lower: 26 Upper: 28 Support: 5 Expected: 5
         Current hierarchy: [16, 24, 28]
         r = 4
         Lower: 29 Upper: 30 Support: 4 Expected: 5
@@ -735,8 +734,7 @@ def RGHW(C, C2, r, L=None, verbose=False):
         sage: RGHW(C, C2, 2)
         5
         sage: RGHW(C, C2, 2, verbose=True)
-        Lower: 2 Upper: 6 Support: 2 Expected: 2
-        Subspace with cardinality of support 5 found
+        Lower: 2 Upper: 5 Support: 2 Expected: 2
         5
         sage: # Note that RGHW(C, C2, 2) can be higher than GHW(C, 2):
         sage: GHW(C, 2)
@@ -864,12 +862,11 @@ def rhierarchy(C, C2, L=None, verbose=False):
         [3, 5]
         sage: rhierarchy(C, C2, verbose=True)
         r = 1
-        Lower: 1 Upper: 6 Support: 1 Expected: 2
+        Lower: 1 Upper: 4 Support: 1 Expected: 1
         Subspace with cardinality of support 3 found
         Current hierarchy: [3]
         r = 2
-        Lower: 4 Upper: 6 Support: 2 Expected: 2
-        Subspace with cardinality of support 5 found
+        Lower: 4 Upper: 5 Support: 2 Expected: 2
         Current hierarchy: [3, 5]
         [3, 5]
     
@@ -1003,23 +1000,27 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
 
         sage: C = codes.GeneralizedReedSolomonCode(GF(7).list(), 4)
         sage: higher_spectrum(C)
-        {1: {4: 35, 5: 63, 6: 168, 7: 134},
-        2: {5: 21, 6: 357, 7: 2472},
-        3: {6: 7, 7: 393},
-        4: {7: 1}}
+        {0: {0: 1},
+         1: {4: 35, 5: 63, 6: 168, 7: 134},
+         2: {5: 21, 6: 357, 7: 2472},
+         3: {6: 7, 7: 393},
+         4: {7: 1}}
         sage: higher_spectrum(C, verbose=True) 
+        r = 0
+        Spectrum: {0: 1}
         r = 1
-        Current spectrum: {4: 35, 5: 63, 6: 168, 7: 134}
+        Spectrum: {4: 35, 5: 63, 6: 168, 7: 134}
         r = 2
-        Current spectrum: {5: 21, 6: 357, 7: 2472}
+        Spectrum: {5: 21, 6: 357, 7: 2472}
         r = 3
-        Current spectrum: {6: 7, 7: 393}
+        Spectrum: {6: 7, 7: 393}
         r = 4
-        Current spectrum: {7: 1}
-        {1: {4: 35, 5: 63, 6: 168, 7: 134},
-        2: {5: 21, 6: 357, 7: 2472},
-        3: {6: 7, 7: 393},
-        4: {7: 1}}
+        Spectrum: {7: 1}
+        {0: {0: 1},
+         1: {4: 35, 5: 63, 6: 168, 7: 134},
+         2: {5: 21, 6: 357, 7: 2472},
+         3: {6: 7, 7: 393},
+         4: {7: 1}}
         sage: higher_spectrum(C, R=[2,3]) 
         {2: {5: 21, 6: 357, 7: 2472}, 3: {6: 7, 7: 393}}
         sage: higher_spectrum(C, R=[4], subspace_list=True) 
@@ -1253,7 +1254,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
         Lower: 2 Upper: 28 Support: 2 Expected: 5
         Subspace with cardinality of support 24 found
         Lower: 14 Upper: 24 Support: 3 Expected: 4
-        Lower: 19 Upper: 24 Support: 4 Expected: 4
+        Lower: 20 Upper: 24 Support: 4 Expected: 4
         24
     
     """
@@ -1402,19 +1403,19 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
         Lower: 1 Upper: 27 Support: 1 Expected: 5
         Subspace with cardinality of support 16 found
         Lower: 9 Upper: 16 Support: 2 Expected: 3
-        Lower: 12 Upper: 16 Support: 3 Expected: 3
+        Lower: 14 Upper: 16 Support: 3 Expected: 3
         Current hierarchy: [16]
         r = 2
         Lower: 17 Upper: 28 Support: 2 Expected: 5
         Subspace with cardinality of support 24 found
         Lower: 17 Upper: 24 Support: 3 Expected: 4
-        Lower: 19 Upper: 24 Support: 4 Expected: 4
+        Lower: 20 Upper: 24 Support: 4 Expected: 4
         Current hierarchy: [16, 24]
         r = 3
         Lower: 25 Upper: 29 Support: 3 Expected: 5
         Subspace with cardinality of support 28 found
         Lower: 25 Upper: 28 Support: 4 Expected: 5
-        Lower: 25 Upper: 28 Support: 5 Expected: 5
+        Lower: 26 Upper: 28 Support: 5 Expected: 5
         Current hierarchy: [16, 24, 28]
         r = 4
         Lower: 29 Upper: 30 Support: 4 Expected: 5
@@ -1591,8 +1592,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
         sage: RGHW_low_mem(C, C2, 2)
         5
         sage: RGHW_low_mem(C, C2, 2, verbose=True)
-        Lower: 2 Upper: 6 Support: 2 Expected: 2
-        Subspace with cardinality of support 5 found
+        Lower: 2 Upper: 5 Support: 2 Expected: 2
         5
         sage: # Note that RGHW_low_mem(C, C2, 2) can be higher than GHW(C, 2):
         sage: GHW(C, 2)
@@ -1744,12 +1744,11 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
         [3, 5]
         sage: rhierarchy_low_mem(C, C2, verbose=True)
         r = 1
-        Lower: 1 Upper: 6 Support: 1 Expected: 2
+        Lower: 1 Upper: 4 Support: 1 Expected: 1
         Subspace with cardinality of support 3 found
         Current hierarchy: [3]
         r = 2
-        Lower: 4 Upper: 6 Support: 2 Expected: 2
-        Subspace with cardinality of support 5 found
+        Lower: 4 Upper: 5 Support: 2 Expected: 2
         Current hierarchy: [3, 5]
         [3, 5]
     
@@ -1907,23 +1906,27 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
 
         sage: C = codes.GeneralizedReedSolomonCode(GF(7).list(), 4)
         sage: higher_spectrum_low_mem(C)
-        {1: {4: 35, 5: 63, 6: 168, 7: 134},
-        2: {5: 21, 6: 357, 7: 2472},
-        3: {6: 7, 7: 393},
-        4: {7: 1}}
+        {0: {0: 1},
+         1: {4: 35, 5: 63, 6: 168, 7: 134},
+         2: {5: 21, 6: 357, 7: 2472},
+         3: {6: 7, 7: 393},
+         4: {7: 1}}
         sage: higher_spectrum_low_mem(C, verbose=True) 
+        r = 0
+        Spectrum: {0: 1}
         r = 1
-        Current spectrum: {4: 35, 5: 63, 6: 168, 7: 134}
+        Spectrum: {4: 35, 5: 63, 6: 168, 7: 134}
         r = 2
-        Current spectrum: {5: 21, 6: 357, 7: 2472}
+        Spectrum: {5: 21, 6: 357, 7: 2472}
         r = 3
-        Current spectrum: {6: 7, 7: 393}
+        Spectrum: {6: 7, 7: 393}
         r = 4
-        Current spectrum: {7: 1}
-        {1: {4: 35, 5: 63, 6: 168, 7: 134},
-        2: {5: 21, 6: 357, 7: 2472},
-        3: {6: 7, 7: 393},
-        4: {7: 1}}
+        Spectrum: {7: 1}
+        {0: {0: 1},
+         1: {4: 35, 5: 63, 6: 168, 7: 134},
+         2: {5: 21, 6: 357, 7: 2472},
+         3: {6: 7, 7: 393},
+         4: {7: 1}}
         sage: higher_spectrum_low_mem(C, R=[2,3]) 
         {2: {5: 21, 6: 357, 7: 2472}, 3: {6: 7, 7: 393}}
         sage: higher_spectrum_low_mem(C, R=[4], subspace_list=True) 
