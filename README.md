@@ -18,9 +18,7 @@ pip install .
 ```
 
 ## Recommendations
-Many of the main functions in this package have a verbose argument. I recommend using `verbose=True` when doing heavy computations (for example, `hierarchy(C, verbose=True)`), since the output can be used to estimate whether the algorithm is going to finish in a reasonable amount of time or not. Moreover, since this provides the current upper and lower bounds, if upper or lower bounds are known by any other method, this information may allow to determine the GHWs before the algorithm finishes. 
-
-For codes with k > n/2, the weight hierarchy is usually computed faster through the dual code and Wei duality. The functions `hierarchy` and `hierarchy_low_mem` do this automatically (and then `verbose=True` shows the bounds for the dual code), unless `strategy='direct'` or the argument `L` is given.
+Many of the main functions in this package have a verbose argument. I recommend using `verbose=True` when doing heavy computations (for example, `hierarchy(C, verbose=True)`), since the output can be used to estimate whether the algorithm is going to finish in a reasonable amount of time or not. Moreover, since this provides the current upper and lower bounds, if upper or lower bounds are known by any other method, this information may allow to determine the GHWs before the algorithm finishes. For codes with k > n/2, the weight hierarchy is usually computed faster through the dual code and Wei duality. The functions `hierarchy` and `hierarchy_low_mem` do this automatically (and then `verbose=True` shows the bounds for the dual code), unless `strategy='direct'` or the argument `L` is given.
 
 ## Small example
 ```python
