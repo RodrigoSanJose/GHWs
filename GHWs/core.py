@@ -1,5 +1,5 @@
 #################################################################################
-# V1.2.1 05/10/26
+# V1.2.2 17/11/26
 # Author:
 # Rodrigo San-José. Contact: rsanjose@vt.edu
 # GitHub repository: https://github.com/RodrigoSanJose/GHWs
@@ -42,6 +42,7 @@ from sage.misc.flatten import flatten
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.arith.misc import gcd, binomial
 from sage.coding.cyclic_code import CyclicCode
+from sage.coding.linear_code import LinearCode
 
 #################################################################################
 # AUXILIARY FUNCTIONS
@@ -396,7 +397,8 @@ def wei_duality(L, n=None):
     When provided with L, a list with the weight hierarchy of a code C, it
     computes the GHWs of the dual via Wei duality. The optional argument n 
     is the length of the code C. If none is given, we assume the length of C
-    is equal to L[-1], i.e., C is non-degenerate.
+    is equal to L[-1], i.e., C is non-degenerate. If C may be degenerate,
+    n has to be given.
 
     OUTPUT:
 
@@ -422,7 +424,9 @@ def GHW(C, r, L=None, verbose=False):
     is given, we use L = information(G) for a generator matrix G of C (unless the 
     code is cyclic, in which case we use additional improvements). If we set 
     verbose=True, real time information is provided during the execution of the 
-    algorithm (see the example).
+    algorithm (see the example). Wei duality cannot be used to obtain a single
+    GHW. If 2k > n and several GHWs are needed, it is usually faster to compute
+    the whole weight hierarchy (see the argument strategy of hierarchy).
 
     OUTPUT:
 
@@ -445,6 +449,7 @@ def GHW(C, r, L=None, verbose=False):
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
+    nsupp = len(matrix_supp(G)) # Cardinality of the support of C
     if r not in range(1, k + 1):
         raise Exception('Invalid value of r')
     # Only cyclic codes with non-repeated roots are considered
@@ -461,7 +466,7 @@ def GHW(C, r, L=None, verbose=False):
             ghwlb = max(ghwlb, bch_bound(C)) 
         except:
             ghwlb = ghwlb
-    ghwub = n - k + r 
+    ghwub = nsupp - k + r # Singleton bound for C punctured on its support
     w = r
     while w <= k and ghwlb < ghwub: 
         # Computation of w0, the expected w to finish
@@ -525,7 +530,7 @@ def GHW(C, r, L=None, verbose=False):
         w = w + 1
     return ghwub
 
-def hierarchy(C, L=None, verbose=False): 
+def hierarchy(C, L=None, verbose=False, strategy='auto'): 
     r"""
     Computes the weight hierarchy of C. The optional argument L is a list
     of the form [inf_sets, gen_mats, redundancy], where inf_sets is a list
@@ -536,6 +541,17 @@ def hierarchy(C, L=None, verbose=False):
     code is cyclic, in which case we use additional improvements). If we set 
     verbose=True, real time information is provided during the execution of the 
     algorithm (see the example).
+
+    The optional argument strategy selects how the hierarchy is computed. Let
+    s be the cardinality of the support of C (s = n if C is non-degenerate).
+    With strategy='dual', we compute the hierarchy of the dual of C punctured
+    on its support, which has dimension s - k, and obtain the hierarchy of C
+    using Wei duality. With strategy='direct', the hierarchy is computed from
+    C itself. With strategy='auto' (default), we use 'dual' if 2k > s and L is
+    not given, and 'direct' otherwise. Both strategies give the same result,
+    but this choice is a heuristic: the computation with the smaller dimension
+    is usually faster, although not always. The argument L cannot be used with
+    strategy='dual', since it refers to C and not to its dual.
 
     OUTPUT:
 
@@ -574,12 +590,34 @@ def hierarchy(C, L=None, verbose=False):
         r = 6
         Current hierarchy: [16, 24, 28, 30, 31, 32]
         [16, 24, 28, 30, 31, 32]
+        sage: C = codes.BinaryReedMullerCode(2, 4) # 2k > n, so the dual code is used
+        sage: hierarchy(C)
+        [4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]
 
     """
+    if strategy not in ['auto', 'direct', 'dual']:
+        raise Exception("strategy has to be 'auto', 'direct' or 'dual'")
+    if strategy == 'dual' and L is not None:
+        raise Exception("L cannot be used with strategy='dual'")
     K = C.base_field()
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
+    supp = sorted(matrix_supp(G)) # Support of C
+    nsupp = len(supp)
+    if strategy == 'dual' or (strategy == 'auto' and L is None and 2 * k > nsupp):
+        # We compute the hierarchy of the dual of C punctured on its support,
+        # which has dimension nsupp - k, and then we use Wei duality
+        if verbose:
+            print('Computing the hierarchy of the dual code, of dimension', nsupp - k)
+        if k == nsupp: # In this case, the dual is the zero code
+            hierarchyghw = list(range(1, nsupp + 1))
+        else:
+            Cp = LinearCode(G.matrix_from_columns(supp))
+            hierarchyghw = wei_duality(hierarchy(Cp.dual_code(), verbose=verbose, strategy='direct'), nsupp)
+        if verbose:
+            print('Hierarchy of C (by Wei duality):', hierarchyghw)
+        return hierarchyghw
     # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
@@ -601,7 +639,7 @@ def hierarchy(C, L=None, verbose=False):
                     ghwlb = ghwlb
         else:
             ghwlb = hierarchyghw[-1] + 1 
-        ghwub = n - k + r 
+        ghwub = nsupp - k + r # Singleton bound for C punctured on its support
         w = r
         while w <= k and ghwlb < ghwub: 
             terminate = False
@@ -1193,7 +1231,10 @@ def GHW_low_mem(C, r, L=None, verbose=False):
     code is cyclic, in which case we use additional improvements). If we set 
     verbose=True, real time information is provided during the execution of the 
     algorithm (see the example). This is a version of GHW that requires less
-    memory, at the expense of speed in some cases.
+    memory, at the expense of speed in some cases. Wei duality cannot be used
+    to obtain a single GHW. If 2k > n and several GHWs are needed, it is usually
+    faster to compute the whole weight hierarchy (see the argument strategy of
+    hierarchy_low_mem).
 
     OUTPUT:
 
@@ -1216,6 +1257,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
+    nsupp = len(matrix_supp(G)) # Cardinality of the support of C
     if r not in range(1, k + 1):
         raise Exception('Invalid value of r')
     # Only cyclic codes with non-repeated roots are considered
@@ -1232,7 +1274,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
             ghwlb = max(ghwlb, bch_bound(C)) 
         except:
             ghwlb = ghwlb
-    ghwub = n - k + r 
+    ghwub = nsupp - k + r # Singleton bound for C punctured on its support
     w = r
     while w <= k and ghwlb < ghwub: 
         # Computation of w0, the expected w to finish
@@ -1317,7 +1359,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
         w = w + 1
     return ghwub
 
-def hierarchy_low_mem(C, L=None, verbose=False): 
+def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'): 
     r"""
     Computes the weight hierarchy of C. The optional argument L is a list
     of the form [inf_sets, gen_mats, redundancy], where inf_sets is a list
@@ -1329,6 +1371,17 @@ def hierarchy_low_mem(C, L=None, verbose=False):
     verbose=True, real time information is provided during the execution of the 
     algorithm (see the example). This is a version of hierarchy that requires 
     less memory, at the expense of speed in some cases.
+
+    The optional argument strategy selects how the hierarchy is computed. Let
+    s be the cardinality of the support of C (s = n if C is non-degenerate).
+    With strategy='dual', we compute the hierarchy of the dual of C punctured
+    on its support, which has dimension s - k, and obtain the hierarchy of C
+    using Wei duality. With strategy='direct', the hierarchy is computed from
+    C itself. With strategy='auto' (default), we use 'dual' if 2k > s and L is
+    not given, and 'direct' otherwise. Both strategies give the same result,
+    but this choice is a heuristic: the computation with the smaller dimension
+    is usually faster, although not always. The argument L cannot be used with
+    strategy='dual', since it refers to C and not to its dual.
 
     OUTPUT:
 
@@ -1367,12 +1420,34 @@ def hierarchy_low_mem(C, L=None, verbose=False):
         r = 6
         Current hierarchy: [16, 24, 28, 30, 31, 32]
         [16, 24, 28, 30, 31, 32]
+        sage: C = codes.BinaryReedMullerCode(2, 4) # 2k > n, so the dual code is used
+        sage: hierarchy_low_mem(C)
+        [4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]
 
     """
+    if strategy not in ['auto', 'direct', 'dual']:
+        raise Exception("strategy has to be 'auto', 'direct' or 'dual'")
+    if strategy == 'dual' and L is not None:
+        raise Exception("L cannot be used with strategy='dual'")
     K = C.base_field()
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
+    supp = sorted(matrix_supp(G)) # Support of C
+    nsupp = len(supp)
+    if strategy == 'dual' or (strategy == 'auto' and L is None and 2 * k > nsupp):
+        # We compute the hierarchy of the dual of C punctured on its support,
+        # which has dimension nsupp - k, and then we use Wei duality
+        if verbose:
+            print('Computing the hierarchy of the dual code, of dimension', nsupp - k)
+        if k == nsupp: # In this case, the dual is the zero code
+            hierarchyghw = list(range(1, nsupp + 1))
+        else:
+            Cp = LinearCode(G.matrix_from_columns(supp))
+            hierarchyghw = wei_duality(hierarchy_low_mem(Cp.dual_code(), verbose=verbose, strategy='direct'), nsupp)
+        if verbose:
+            print('Hierarchy of C (by Wei duality):', hierarchyghw)
+        return hierarchyghw
     # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
@@ -1394,7 +1469,7 @@ def hierarchy_low_mem(C, L=None, verbose=False):
                     ghwlb = ghwlb
         else:
             ghwlb = hierarchyghw[-1] + 1 
-        ghwub = n - k + r 
+        ghwub = nsupp - k + r # Singleton bound for C punctured on its support
         w = r
         while w <= k and ghwlb < ghwub: 
             terminate = False

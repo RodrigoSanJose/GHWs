@@ -100,5 +100,26 @@ if not spec == {0: {0: 1}, 1: {4: 35, 5: 63, 6: 168, 7: 134}, 2: {5: 21, 6: 357,
 if not rspec == {0: {0: 1}, 1: {4: 35, 5: 63, 6: 161, 7: 133}, 2: {5: 21, 6: 301, 7: 2079}}:
     raise Exception("Error with rhigher_spectrum in the RS test")
 
+# We test the strategies of hierarchy (direct, or with the dual code and Wei
+# duality) with 2k > n, 2k = n, a cyclic code, a degenerate code, a code with
+# a degenerate dual, and a code that is the whole space on its support
+
+K = GF(2)
+H = codes.BCHCode(K, 7, 3).generator_matrix() # [7, 4, 3] cyclic Hamming code
+R = codes.BinaryReedMullerCode(1, 3).generator_matrix() # [8, 4, 4] code
+tests = [(H, [3, 5, 6, 7]), (H.augment(matrix(K, 4, 2)), [3, 5, 6, 7]), (R, [4, 6, 7, 8]),
+         (R.block_sum(matrix(K, [[1]])), [1, 5, 7, 8, 9]),
+         (identity_matrix(K, 3).augment(matrix(K, 3, 1)), [1, 2, 3])]
+for G, hie in tests:
+    C = LinearCode(G)
+    if not all(hierarchy(C, strategy=s) == hie for s in ['auto', 'direct', 'dual']) or not hie == [GHW(C, r) for r in srange(1, C.dimension() + 1)]:
+        raise Exception("Error with the strategies of hierarchy")
+for args in [{'L': information(H), 'strategy': 'dual'}, {'strategy': 'other'}]:
+    try:
+        hierarchy(LinearCode(H), **args)
+    except Exception:
+        continue
+    raise Exception("Error with the arguments of hierarchy")
+
 end = time.time()
 print('Total time:', end - start)
