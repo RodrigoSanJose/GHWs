@@ -1,5 +1,5 @@
 #################################################################################
-# V1.2.1 05/10/26
+# V1.2.2 17/11/26
 # Author:
 # Rodrigo San-José. Contact: rsanjose@vt.edu
 # GitHub repository: https://github.com/RodrigoSanJose/GHWs
@@ -42,6 +42,7 @@ from sage.misc.flatten import flatten
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.arith.misc import gcd, binomial
 from sage.coding.cyclic_code import CyclicCode
+from sage.coding.linear_code import LinearCode
 
 #################################################################################
 # AUXILIARY FUNCTIONS
@@ -304,7 +305,7 @@ def matrix_supp(M):
 
         sage: M = matrix(GF(2), [[1,0,1,0],[1,1,0,0]])
         sage: matrix_supp(M)
-        {0,1,2}
+        {0, 1, 2}
     
     """
     sup = set()
@@ -422,7 +423,11 @@ def GHW(C, r, L=None, verbose=False):
     is given, we use L = information(G) for a generator matrix G of C (unless the 
     code is cyclic, in which case we use additional improvements). If we set 
     verbose=True, real time information is provided during the execution of the 
-    algorithm (see the example).
+    algorithm (see the example). This function always works with C directly:
+    by Wei duality, a GHW of C is determined by the largest GHWs of the dual
+    code, which usually requires computing several of them. If 2k > n and
+    several GHWs are needed, it is usually faster to compute the whole weight
+    hierarchy (see the argument strategy of hierarchy).
 
     OUTPUT:
 
@@ -437,7 +442,7 @@ def GHW(C, r, L=None, verbose=False):
         Lower: 2 Upper: 28 Support: 2 Expected: 5
         Subspace with cardinality of support 24 found
         Lower: 14 Upper: 24 Support: 3 Expected: 4
-        Lower: 19 Upper: 24 Support: 4 Expected: 4
+        Lower: 20 Upper: 24 Support: 4 Expected: 4
         24
     
     """
@@ -445,6 +450,7 @@ def GHW(C, r, L=None, verbose=False):
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
+    nsupp = len(matrix_supp(G)) # Cardinality of the support of C
     if r not in range(1, k + 1):
         raise Exception('Invalid value of r')
     # Only cyclic codes with non-repeated roots are considered
@@ -461,7 +467,7 @@ def GHW(C, r, L=None, verbose=False):
             ghwlb = max(ghwlb, bch_bound(C)) 
         except:
             ghwlb = ghwlb
-    ghwub = n - k + r 
+    ghwub = nsupp - k + r # Singleton bound for C punctured on its support
     w = r
     while w <= k and ghwlb < ghwub: 
         # Computation of w0, the expected w to finish
@@ -525,7 +531,7 @@ def GHW(C, r, L=None, verbose=False):
         w = w + 1
     return ghwub
 
-def hierarchy(C, L=None, verbose=False): 
+def hierarchy(C, L=None, verbose=False, strategy='auto'): 
     r"""
     Computes the weight hierarchy of C. The optional argument L is a list
     of the form [inf_sets, gen_mats, redundancy], where inf_sets is a list
@@ -536,6 +542,18 @@ def hierarchy(C, L=None, verbose=False):
     code is cyclic, in which case we use additional improvements). If we set 
     verbose=True, real time information is provided during the execution of the 
     algorithm (see the example).
+
+    The optional argument strategy selects how the hierarchy is computed. Let
+    s be the cardinality of the support of C (s = n if C is non-degenerate).
+    With strategy='dual', we compute the hierarchy of the dual of C punctured
+    on its support, which has dimension s - k, and obtain the hierarchy of C
+    using Wei duality. With strategy='direct', the hierarchy is computed from
+    C itself. With strategy='auto' (default), we use 'dual' if 2k > s and L is
+    not given, and 'direct' otherwise. Both strategies give the same result,
+    but this choice is a heuristic: the computation with the smaller dimension
+    is usually faster, although not always. The argument L cannot be used with
+    strategy='dual', since it refers to C and not to its dual. With the dual
+    strategy, the bounds printed by verbose=True refer to the dual code.
 
     OUTPUT:
 
@@ -551,19 +569,19 @@ def hierarchy(C, L=None, verbose=False):
         Lower: 1 Upper: 27 Support: 1 Expected: 5
         Subspace with cardinality of support 16 found
         Lower: 9 Upper: 16 Support: 2 Expected: 3
-        Lower: 12 Upper: 16 Support: 3 Expected: 3
+        Lower: 14 Upper: 16 Support: 3 Expected: 3
         Current hierarchy: [16]
         r = 2
         Lower: 17 Upper: 28 Support: 2 Expected: 5
         Subspace with cardinality of support 24 found
         Lower: 17 Upper: 24 Support: 3 Expected: 4
-        Lower: 19 Upper: 24 Support: 4 Expected: 4
+        Lower: 20 Upper: 24 Support: 4 Expected: 4
         Current hierarchy: [16, 24]
         r = 3
         Lower: 25 Upper: 29 Support: 3 Expected: 5
         Subspace with cardinality of support 28 found
         Lower: 25 Upper: 28 Support: 4 Expected: 5
-        Lower: 25 Upper: 28 Support: 5 Expected: 5
+        Lower: 26 Upper: 28 Support: 5 Expected: 5
         Current hierarchy: [16, 24, 28]
         r = 4
         Lower: 29 Upper: 30 Support: 4 Expected: 5
@@ -574,12 +592,34 @@ def hierarchy(C, L=None, verbose=False):
         r = 6
         Current hierarchy: [16, 24, 28, 30, 31, 32]
         [16, 24, 28, 30, 31, 32]
+        sage: C = codes.BinaryReedMullerCode(2, 4) # 2k > n, so the dual code is used
+        sage: hierarchy(C)
+        [4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]
 
     """
+    if strategy not in ['auto', 'direct', 'dual']:
+        raise Exception("strategy has to be 'auto', 'direct' or 'dual'")
+    if strategy == 'dual' and L is not None:
+        raise Exception("L cannot be used with strategy='dual'")
     K = C.base_field()
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
+    supp = sorted(matrix_supp(G)) # Support of C
+    nsupp = len(supp)
+    if strategy == 'dual' or (strategy == 'auto' and L is None and 2 * k > nsupp):
+        # We compute the hierarchy of the dual of C punctured on its support,
+        # which has dimension nsupp - k, and then we use Wei duality
+        if verbose:
+            print('Computing the hierarchy of the dual of C punctured on its support, of dimension', nsupp - k)
+        if k == nsupp: # In this case, the dual is the zero code
+            hierarchyghw = list(range(1, nsupp + 1))
+        else:
+            Cp = LinearCode(G.matrix_from_columns(supp))
+            hierarchyghw = wei_duality(hierarchy(Cp.dual_code(), verbose=verbose, strategy='direct'), nsupp)
+        if verbose:
+            print('Hierarchy of C (by Wei duality):', hierarchyghw)
+        return hierarchyghw
     # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
@@ -601,7 +641,7 @@ def hierarchy(C, L=None, verbose=False):
                     ghwlb = ghwlb
         else:
             ghwlb = hierarchyghw[-1] + 1 
-        ghwub = n - k + r 
+        ghwub = nsupp - k + r # Singleton bound for C punctured on its support
         w = r
         while w <= k and ghwlb < ghwub: 
             terminate = False
@@ -694,8 +734,7 @@ def RGHW(C, C2, r, L=None, verbose=False):
         sage: RGHW(C, C2, 2)
         5
         sage: RGHW(C, C2, 2, verbose=True)
-        Lower: 2 Upper: 6 Support: 2 Expected: 2
-        Subspace with cardinality of support 5 found
+        Lower: 2 Upper: 5 Support: 2 Expected: 2
         5
         sage: # Note that RGHW(C, C2, 2) can be higher than GHW(C, 2):
         sage: GHW(C, 2)
@@ -823,12 +862,11 @@ def rhierarchy(C, C2, L=None, verbose=False):
         [3, 5]
         sage: rhierarchy(C, C2, verbose=True)
         r = 1
-        Lower: 1 Upper: 6 Support: 1 Expected: 2
+        Lower: 1 Upper: 4 Support: 1 Expected: 1
         Subspace with cardinality of support 3 found
         Current hierarchy: [3]
         r = 2
-        Lower: 4 Upper: 6 Support: 2 Expected: 2
-        Subspace with cardinality of support 5 found
+        Lower: 4 Upper: 5 Support: 2 Expected: 2
         Current hierarchy: [3, 5]
         [3, 5]
     
@@ -962,23 +1000,27 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
 
         sage: C = codes.GeneralizedReedSolomonCode(GF(7).list(), 4)
         sage: higher_spectrum(C)
-        {1: {4: 35, 5: 63, 6: 168, 7: 134},
-        2: {5: 21, 6: 357, 7: 2472},
-        3: {6: 7, 7: 393},
-        4: {7: 1}}
+        {0: {0: 1},
+         1: {4: 35, 5: 63, 6: 168, 7: 134},
+         2: {5: 21, 6: 357, 7: 2472},
+         3: {6: 7, 7: 393},
+         4: {7: 1}}
         sage: higher_spectrum(C, verbose=True) 
+        r = 0
+        Spectrum: {0: 1}
         r = 1
-        Current spectrum: {4: 35, 5: 63, 6: 168, 7: 134}
+        Spectrum: {4: 35, 5: 63, 6: 168, 7: 134}
         r = 2
-        Current spectrum: {5: 21, 6: 357, 7: 2472}
+        Spectrum: {5: 21, 6: 357, 7: 2472}
         r = 3
-        Current spectrum: {6: 7, 7: 393}
+        Spectrum: {6: 7, 7: 393}
         r = 4
-        Current spectrum: {7: 1}
-        {1: {4: 35, 5: 63, 6: 168, 7: 134},
-        2: {5: 21, 6: 357, 7: 2472},
-        3: {6: 7, 7: 393},
-        4: {7: 1}}
+        Spectrum: {7: 1}
+        {0: {0: 1},
+         1: {4: 35, 5: 63, 6: 168, 7: 134},
+         2: {5: 21, 6: 357, 7: 2472},
+         3: {6: 7, 7: 393},
+         4: {7: 1}}
         sage: higher_spectrum(C, R=[2,3]) 
         {2: {5: 21, 6: 357, 7: 2472}, 3: {6: 7, 7: 393}}
         sage: higher_spectrum(C, R=[4], subspace_list=True) 
@@ -1193,7 +1235,11 @@ def GHW_low_mem(C, r, L=None, verbose=False):
     code is cyclic, in which case we use additional improvements). If we set 
     verbose=True, real time information is provided during the execution of the 
     algorithm (see the example). This is a version of GHW that requires less
-    memory, at the expense of speed in some cases.
+    memory, at the expense of speed in some cases. This function always works
+    with C directly: by Wei duality, a GHW of C is determined by the largest
+    GHWs of the dual code, which usually requires computing several of them.
+    If 2k > n and several GHWs are needed, it is usually faster to compute the
+    whole weight hierarchy (see the argument strategy of hierarchy_low_mem).
 
     OUTPUT:
 
@@ -1208,7 +1254,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
         Lower: 2 Upper: 28 Support: 2 Expected: 5
         Subspace with cardinality of support 24 found
         Lower: 14 Upper: 24 Support: 3 Expected: 4
-        Lower: 19 Upper: 24 Support: 4 Expected: 4
+        Lower: 20 Upper: 24 Support: 4 Expected: 4
         24
     
     """
@@ -1216,6 +1262,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
+    nsupp = len(matrix_supp(G)) # Cardinality of the support of C
     if r not in range(1, k + 1):
         raise Exception('Invalid value of r')
     # Only cyclic codes with non-repeated roots are considered
@@ -1232,7 +1279,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
             ghwlb = max(ghwlb, bch_bound(C)) 
         except:
             ghwlb = ghwlb
-    ghwub = n - k + r 
+    ghwub = nsupp - k + r # Singleton bound for C punctured on its support
     w = r
     while w <= k and ghwlb < ghwub: 
         # Computation of w0, the expected w to finish
@@ -1317,7 +1364,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
         w = w + 1
     return ghwub
 
-def hierarchy_low_mem(C, L=None, verbose=False): 
+def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'): 
     r"""
     Computes the weight hierarchy of C. The optional argument L is a list
     of the form [inf_sets, gen_mats, redundancy], where inf_sets is a list
@@ -1329,6 +1376,18 @@ def hierarchy_low_mem(C, L=None, verbose=False):
     verbose=True, real time information is provided during the execution of the 
     algorithm (see the example). This is a version of hierarchy that requires 
     less memory, at the expense of speed in some cases.
+
+    The optional argument strategy selects how the hierarchy is computed. Let
+    s be the cardinality of the support of C (s = n if C is non-degenerate).
+    With strategy='dual', we compute the hierarchy of the dual of C punctured
+    on its support, which has dimension s - k, and obtain the hierarchy of C
+    using Wei duality. With strategy='direct', the hierarchy is computed from
+    C itself. With strategy='auto' (default), we use 'dual' if 2k > s and L is
+    not given, and 'direct' otherwise. Both strategies give the same result,
+    but this choice is a heuristic: the computation with the smaller dimension
+    is usually faster, although not always. The argument L cannot be used with
+    strategy='dual', since it refers to C and not to its dual. With the dual
+    strategy, the bounds printed by verbose=True refer to the dual code.
 
     OUTPUT:
 
@@ -1344,19 +1403,19 @@ def hierarchy_low_mem(C, L=None, verbose=False):
         Lower: 1 Upper: 27 Support: 1 Expected: 5
         Subspace with cardinality of support 16 found
         Lower: 9 Upper: 16 Support: 2 Expected: 3
-        Lower: 12 Upper: 16 Support: 3 Expected: 3
+        Lower: 14 Upper: 16 Support: 3 Expected: 3
         Current hierarchy: [16]
         r = 2
         Lower: 17 Upper: 28 Support: 2 Expected: 5
         Subspace with cardinality of support 24 found
         Lower: 17 Upper: 24 Support: 3 Expected: 4
-        Lower: 19 Upper: 24 Support: 4 Expected: 4
+        Lower: 20 Upper: 24 Support: 4 Expected: 4
         Current hierarchy: [16, 24]
         r = 3
         Lower: 25 Upper: 29 Support: 3 Expected: 5
         Subspace with cardinality of support 28 found
         Lower: 25 Upper: 28 Support: 4 Expected: 5
-        Lower: 25 Upper: 28 Support: 5 Expected: 5
+        Lower: 26 Upper: 28 Support: 5 Expected: 5
         Current hierarchy: [16, 24, 28]
         r = 4
         Lower: 29 Upper: 30 Support: 4 Expected: 5
@@ -1367,12 +1426,34 @@ def hierarchy_low_mem(C, L=None, verbose=False):
         r = 6
         Current hierarchy: [16, 24, 28, 30, 31, 32]
         [16, 24, 28, 30, 31, 32]
+        sage: C = codes.BinaryReedMullerCode(2, 4) # 2k > n, so the dual code is used
+        sage: hierarchy_low_mem(C)
+        [4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]
 
     """
+    if strategy not in ['auto', 'direct', 'dual']:
+        raise Exception("strategy has to be 'auto', 'direct' or 'dual'")
+    if strategy == 'dual' and L is not None:
+        raise Exception("L cannot be used with strategy='dual'")
     K = C.base_field()
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
+    supp = sorted(matrix_supp(G)) # Support of C
+    nsupp = len(supp)
+    if strategy == 'dual' or (strategy == 'auto' and L is None and 2 * k > nsupp):
+        # We compute the hierarchy of the dual of C punctured on its support,
+        # which has dimension nsupp - k, and then we use Wei duality
+        if verbose:
+            print('Computing the hierarchy of the dual of C punctured on its support, of dimension', nsupp - k)
+        if k == nsupp: # In this case, the dual is the zero code
+            hierarchyghw = list(range(1, nsupp + 1))
+        else:
+            Cp = LinearCode(G.matrix_from_columns(supp))
+            hierarchyghw = wei_duality(hierarchy_low_mem(Cp.dual_code(), verbose=verbose, strategy='direct'), nsupp)
+        if verbose:
+            print('Hierarchy of C (by Wei duality):', hierarchyghw)
+        return hierarchyghw
     # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
@@ -1394,7 +1475,7 @@ def hierarchy_low_mem(C, L=None, verbose=False):
                     ghwlb = ghwlb
         else:
             ghwlb = hierarchyghw[-1] + 1 
-        ghwub = n - k + r 
+        ghwub = nsupp - k + r # Singleton bound for C punctured on its support
         w = r
         while w <= k and ghwlb < ghwub: 
             terminate = False
@@ -1511,8 +1592,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
         sage: RGHW_low_mem(C, C2, 2)
         5
         sage: RGHW_low_mem(C, C2, 2, verbose=True)
-        Lower: 2 Upper: 6 Support: 2 Expected: 2
-        Subspace with cardinality of support 5 found
+        Lower: 2 Upper: 5 Support: 2 Expected: 2
         5
         sage: # Note that RGHW_low_mem(C, C2, 2) can be higher than GHW(C, 2):
         sage: GHW(C, 2)
@@ -1664,12 +1744,11 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
         [3, 5]
         sage: rhierarchy_low_mem(C, C2, verbose=True)
         r = 1
-        Lower: 1 Upper: 6 Support: 1 Expected: 2
+        Lower: 1 Upper: 4 Support: 1 Expected: 1
         Subspace with cardinality of support 3 found
         Current hierarchy: [3]
         r = 2
-        Lower: 4 Upper: 6 Support: 2 Expected: 2
-        Subspace with cardinality of support 5 found
+        Lower: 4 Upper: 5 Support: 2 Expected: 2
         Current hierarchy: [3, 5]
         [3, 5]
     
@@ -1827,23 +1906,27 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
 
         sage: C = codes.GeneralizedReedSolomonCode(GF(7).list(), 4)
         sage: higher_spectrum_low_mem(C)
-        {1: {4: 35, 5: 63, 6: 168, 7: 134},
-        2: {5: 21, 6: 357, 7: 2472},
-        3: {6: 7, 7: 393},
-        4: {7: 1}}
+        {0: {0: 1},
+         1: {4: 35, 5: 63, 6: 168, 7: 134},
+         2: {5: 21, 6: 357, 7: 2472},
+         3: {6: 7, 7: 393},
+         4: {7: 1}}
         sage: higher_spectrum_low_mem(C, verbose=True) 
+        r = 0
+        Spectrum: {0: 1}
         r = 1
-        Current spectrum: {4: 35, 5: 63, 6: 168, 7: 134}
+        Spectrum: {4: 35, 5: 63, 6: 168, 7: 134}
         r = 2
-        Current spectrum: {5: 21, 6: 357, 7: 2472}
+        Spectrum: {5: 21, 6: 357, 7: 2472}
         r = 3
-        Current spectrum: {6: 7, 7: 393}
+        Spectrum: {6: 7, 7: 393}
         r = 4
-        Current spectrum: {7: 1}
-        {1: {4: 35, 5: 63, 6: 168, 7: 134},
-        2: {5: 21, 6: 357, 7: 2472},
-        3: {6: 7, 7: 393},
-        4: {7: 1}}
+        Spectrum: {7: 1}
+        {0: {0: 1},
+         1: {4: 35, 5: 63, 6: 168, 7: 134},
+         2: {5: 21, 6: 357, 7: 2472},
+         3: {6: 7, 7: 393},
+         4: {7: 1}}
         sage: higher_spectrum_low_mem(C, R=[2,3]) 
         {2: {5: 21, 6: 357, 7: 2472}, 3: {6: 7, 7: 393}}
         sage: higher_spectrum_low_mem(C, R=[4], subspace_list=True) 

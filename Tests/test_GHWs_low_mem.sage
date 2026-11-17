@@ -100,5 +100,40 @@ if not spec == {0: {0: 1}, 1: {4: 35, 5: 63, 6: 168, 7: 134}, 2: {5: 21, 6: 357,
 if not rspec == {0: {0: 1}, 1: {4: 35, 5: 63, 6: 161, 7: 133}, 2: {5: 21, 6: 301, 7: 2079}}:
     raise Exception("Error with rhigher_spectrum in the RS test")
 
+# We test the strategies of hierarchy_low_mem (direct, or with the dual code and Wei
+# duality) with 2k > n, 2k = n, a cyclic code, a degenerate code, a code with
+# a degenerate dual, and a code that is the whole space on its support
+
+from contextlib import redirect_stdout
+from io import StringIO
+
+K = GF(2)
+H = codes.BCHCode(K, 7, 3).generator_matrix() # [7, 4, 3] cyclic Hamming code
+R = codes.BinaryReedMullerCode(1, 3).generator_matrix() # [8, 4, 4] code
+
+def auto_route(C, L=None): # Hierarchy given by 'auto', and whether it used the dual code
+    out = StringIO()
+    with redirect_stdout(out):
+        hie = hierarchy_low_mem(C, L=L, verbose=True)
+    return hie, 'Wei duality' in out.getvalue()
+
+# Each test: generator matrix, weight hierarchy, and whether 'auto' uses the dual code
+tests = [(H, [3, 5, 6, 7], True), (H.augment(matrix(K, 4, 2)), [3, 5, 6, 7], True), (R, [4, 6, 7, 8], False),
+         (R.block_sum(matrix(K, [[1]])), [1, 5, 7, 8, 9], True),
+         (identity_matrix(K, 3).augment(matrix(K, 3, 1)), [1, 2, 3], True)]
+for G, hie, dual in tests:
+    C = LinearCode(G)
+    if not auto_route(C) == (hie, dual) or not all(hierarchy_low_mem(C, strategy=s) == hie for s in ['direct', 'dual']) or not hie == [GHW_low_mem(C, r) for r in srange(1, C.dimension() + 1)]:
+        raise Exception("Error with the strategies of hierarchy_low_mem")
+# With L given, 'auto' uses the direct route, although 2k > n for H
+if not auto_route(LinearCode(H), information(H)) == ([3, 5, 6, 7], False):
+    raise Exception("Error with the strategies of hierarchy_low_mem")
+for args in [{'L': information(H), 'strategy': 'dual'}, {'strategy': 'other'}]:
+    try:
+        hierarchy_low_mem(LinearCode(H), **args)
+    except Exception:
+        continue
+    raise Exception("Error with the arguments of hierarchy_low_mem")
+
 end = time.time()
 print('Total time:', end - start)
