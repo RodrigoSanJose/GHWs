@@ -1204,8 +1204,6 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
     binary = K.order() == 2 and not subspace_list
     if binary:
         G_bits = binary_rows(G)
-    else:
-        G = G.dense_matrix() # Dense, for faster products (C may be given by a sparse matrix)
     for r in R:
         if verbose:
             print('r =', r)
@@ -1218,6 +1216,8 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue 
+        if not binary and G.is_sparse():
+            G = G.dense_matrix()
         spectemp = {}
         if subspace_list:
             subsptemp = {}
@@ -1335,8 +1335,6 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
     if binary:
         G_bits = binary_rows(G)
         G_syn = binary_rows(G * H2.transpose())
-    else:
-        G = G.dense_matrix() # Dense, for faster products (C may be given by a sparse matrix)
     for r in R:
         if verbose:
             print('r =', r)
@@ -1349,6 +1347,8 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue  
+        if not binary and G.is_sparse():
+            G = G.dense_matrix()
         spectemp = {}
         if subspace_list:
             subsptemp = {}
@@ -2196,8 +2196,6 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
     binary = K.order() == 2 and not subspace_list
     if binary:
         G_bits = binary_rows(G)
-    else:
-        G = G.dense_matrix() # Dense, for faster products (C may be given by a sparse matrix)
     for r in R:
         if verbose:
             print('r =', r)
@@ -2210,6 +2208,8 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue 
+        if not binary and G.is_sparse():
+            G = G.dense_matrix()
         spectemp = {}
         if subspace_list:
             subsptemp = {}
@@ -2353,8 +2353,6 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
     if binary:
         G_bits = binary_rows(G)
         G_syn = binary_rows(G * H2.transpose())
-    else:
-        G = G.dense_matrix() # Dense, for faster products (C may be given by a sparse matrix)
     for r in R:
         if verbose:
             print('r =', r)
@@ -2367,6 +2365,8 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue  
+        if not binary and G.is_sparse():
+            G = G.dense_matrix()
         spectemp = {}
         if subspace_list:
             subsptemp = {}
