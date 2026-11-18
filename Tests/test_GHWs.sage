@@ -100,7 +100,8 @@ if not spec == {0: {0: 1}, 1: {4: 35, 5: 63, 6: 168, 7: 134}, 2: {5: 21, 6: 357,
 if not rspec == {0: {0: 1}, 1: {4: 35, 5: 63, 6: 161, 7: 133}, 2: {5: 21, 6: 301, 7: 2079}}:
     raise Exception("Error with rhigher_spectrum in the RS test")
 
-# Check the order of matrices when two subspaces have the same support size.
+# We test the order of the subspaces in subspace_list when they have the same
+# cardinality of the support
 K = GF(2)
 A = matrix(K, [[1, 0, 1, 0]])
 B = matrix(K, [[0, 1, 0, 1]])
@@ -109,11 +110,11 @@ C2 = LinearCode(A + B)
 expected = [{1: {2: 2, 4: 1}}, {1: {2: [A, B], 4: [A + B]}}]
 for spectrum in (higher_spectrum, higher_spectrum_low_mem):
     if spectrum(C, R=[1], subspace_list=True) != expected:
-        raise Exception(f"Error with the subspace list in {spectrum.__name__}")
+        raise Exception("Error with the subspace list in " + spectrum.__name__)
 expected_relative = [{1: {2: 2}}, {1: {2: [A, B]}}]
 for spectrum in (rhigher_spectrum, rhigher_spectrum_low_mem):
     if spectrum(C, C2, R=[1], subspace_list=True) != expected_relative:
-        raise Exception(f"Error with the subspace list in {spectrum.__name__}")
+        raise Exception("Error with the subspace list in " + spectrum.__name__)
 
 # We test the strategies of hierarchy (direct, or with the dual code and Wei
 # duality) with 2k > n, 2k = n, a cyclic code, a degenerate code, a code with
@@ -150,7 +151,7 @@ for args in [{'L': information(H), 'strategy': 'dual'}, {'strategy': 'other'}, {
         continue
     raise Exception("Error with the arguments of hierarchy")
 
-# An empty generator list must fail before the search computes its bounds.
+# We test that an empty list of generator matrices in L gives an error
 G = matrix(K, [[1, 0, 1, 0], [0, 1, 1, 1]])
 C = LinearCode(G)
 C2 = LinearCode(G[:1])
@@ -169,9 +170,9 @@ for searches, args in (
             if str(error) != 'L[1] must contain at least one generator matrix':
                 raise
         else:
-            raise Exception(f"{search.__name__} accepted an empty generator list in L")
+            raise Exception(search.__name__ + " accepted an empty list of generator matrices in L")
 
-# Integer lifts of binary generators must be reduced modulo two.
+# We test generator matrices in L over ZZ (with 2 instead of 0), which are reduced modulo 2
 C2 = LinearCode(G[1:])
 L = information(G)
 L[1] = [matrix(ZZ, [[1 if entry else 2 for entry in row] for row in generator])
@@ -186,19 +187,23 @@ for searches, args, kwargs, expected in (
 ):
     for search in searches:
         if search(*args, L=L, **kwargs) != expected:
-            raise Exception(f"Error with integer generator lifts in {search.__name__}")
+            raise Exception("Error with generator matrices over ZZ in " + search.__name__)
 
-# Relative spectrum counts must agree with Sage's extension-field rank test.
+# We test that C2 has to be defined over the same field as C
 C = LinearCode(identity_matrix(K, 3))
 F = GF(4, 'a')
-a = F.gen()
-C2 = LinearCode(matrix(F, [[1, a, a]]))
-expected = {1: {1: 3, 2: 3, 3: 1}, 2: {2: 3, 3: 3}}
-for spectrum in (rhigher_spectrum, rhigher_spectrum_low_mem):
-    counts = spectrum(C, C2, R=[1, 2])
-    stored_counts, _ = spectrum(C, C2, R=[1, 2], subspace_list=True)
-    if counts != expected or stored_counts != expected:
-        raise Exception(f"Error with extension-field ranks in {spectrum.__name__}")
+C2 = LinearCode(matrix(F, [[1, F.gen(), F.gen()]]))
+for search, args in ((RGHW, (C, C2, 1)), (RGHW_low_mem, (C, C2, 1)), (rhierarchy, (C, C2)),
+                     (rhierarchy_low_mem, (C, C2)), (rhigher_spectrum, (C, C2)),
+                     (rhigher_spectrum_low_mem, (C, C2)), (RGHW_bound, (C, C2, 1, 2)),
+                     (RGHW_bound_low_mem, (C, C2, 1, 2))):
+    try:
+        search(*args)
+    except Exception as error:
+        if str(error) != 'C and C2 have to be defined over the same field':
+            raise
+    else:
+        raise Exception(search.__name__ + " accepted C2 over a different field")
 
 end = time.time()
 print('Total time:', end - start)
