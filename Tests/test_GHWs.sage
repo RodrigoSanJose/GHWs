@@ -100,6 +100,21 @@ if not spec == {0: {0: 1}, 1: {4: 35, 5: 63, 6: 168, 7: 134}, 2: {5: 21, 6: 357,
 if not rspec == {0: {0: 1}, 1: {4: 35, 5: 63, 6: 161, 7: 133}, 2: {5: 21, 6: 301, 7: 2079}}:
     raise Exception("Error with rhigher_spectrum in the RS test")
 
+# Check the order of matrices when two subspaces have the same support size.
+K = GF(2)
+A = matrix(K, [[1, 0, 1, 0]])
+B = matrix(K, [[0, 1, 0, 1]])
+C = LinearCode(A.stack(B))
+C2 = LinearCode(A + B)
+expected = [{1: {2: 2, 4: 1}}, {1: {2: [A, B], 4: [A + B]}}]
+for spectrum in (higher_spectrum, higher_spectrum_low_mem):
+    if spectrum(C, R=[1], subspace_list=True) != expected:
+        raise Exception(f"Error with the subspace list in {spectrum.__name__}")
+expected_relative = [{1: {2: 2}}, {1: {2: [A, B]}}]
+for spectrum in (rhigher_spectrum, rhigher_spectrum_low_mem):
+    if spectrum(C, C2, R=[1], subspace_list=True) != expected_relative:
+        raise Exception(f"Error with the subspace list in {spectrum.__name__}")
+
 # We test the strategies of hierarchy (direct, or with the dual code and Wei
 # duality) with 2k > n, 2k = n, a cyclic code, a degenerate code, a code with
 # a degenerate dual, and a code that is the whole space on its support
