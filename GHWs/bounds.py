@@ -85,6 +85,8 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if any(j.nrows() != k or j.ncols() != n for j in gen):
+        raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
     if cyc:
         try:
@@ -135,17 +137,12 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         for y in combinations(range(k), w): # All possible supports of weight w
+            # The matrix with the columns of mat in the positions of y (and zero elsewhere),
+            # times j, is equal to mat times the rows of j in the positions of y
+            gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
             for mat in rrefs:
-                cols = mat.columns()
-                MM = []
-                for t in range(k):
-                    if t in y:
-                        MM.append(cols[y.index(t)])
-                    else:
-                        MM.append([0 for z in range(r)])
-                Mtemp = matrix(MM).transpose()
-                for j in gen_reduced:
-                    supptemp = len(matrix_supp(Mtemp * j))
+                for j in gen_rows:
+                    supptemp = len(matrix_supp(mat * j))
                     if supptemp < ghwub:
                         ghwub = supptemp
                         if verbose:
@@ -246,6 +243,8 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if any(j.nrows() != k or j.ncols() != n for j in gen):
+        raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
     if cyc:
         try:
@@ -296,17 +295,12 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         for y in combinations(range(k), w): # All possible supports of weight w
+            # The matrix with the columns of mat in the positions of y (and zero elsewhere),
+            # times j, is equal to mat times the rows of j in the positions of y
+            gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
             for mat in rrefs:
-                cols = mat.columns()
-                MM = []
-                for t in range(k):
-                    if t in y:
-                        MM.append(cols[y.index(t)])
-                    else:
-                        MM.append([0 for z in range(r)])
-                Mtemp = matrix(MM).transpose()
-                for j in gen_reduced:
-                    Mtempj = Mtemp * j
+                for j in gen_rows:
+                    Mtempj = mat * j
                     supptemp = len(matrix_supp(Mtempj))
                     if supptemp < ghwub:
                         interd = r - (H2 * Mtempj.transpose()).rank()
@@ -399,6 +393,8 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if any(j.nrows() != k or j.ncols() != n for j in gen):
+        raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
     if cyc:
         try:
@@ -464,21 +460,21 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
             # The list of all possible non-pivot columns:
             fqcols = cartesian_product([colwt(j, r, K) for j in weights_columns])
             for i in fqcols:
+                # The r x w matrix with pivots in ss and non-pivot columns i, which is the
+                # same for every sup
+                MM = []
+                for z in range(w):
+                    if z in ss: # Pivots
+                        MM.append(standard(ss.index(z), r, K))
+                    else: # Non pivots
+                        MM.append(i[comp.index(z)])
+                mat = matrix(K, MM).transpose()
                 for sup in combinations(range(k), w): # All possible supports of weight w
-                    MM = []
-                    for t in range(k):
-                        if t in sup:
-                            if sup.index(t) in ss: # Pivots
-                                MM.append(standard(ss.index(sup.index(t)), r, K))
-                            else: # Non pivots
-                                MM.append(i[comp.index(sup.index(t))])
-                        else:
-                            MM.append([0 for z in range(r)])
-
-                    Mtemp = matrix(K, MM).transpose()
-
+                    # The matrix with the columns of mat in the positions of sup (and zero
+                    # elsewhere), times j, is equal to mat times the rows of j in the
+                    # positions of sup
                     for j in gen_reduced:
-                        supptemp = len(matrix_supp(Mtemp * j))
+                        supptemp = len(matrix_supp(mat * j.matrix_from_rows(sup)))
                         if supptemp < ghwub:
                             ghwub = supptemp
                             if verbose:
@@ -581,6 +577,8 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
         else:
             L = information(G)
     [inf, gen, red] = L
+    if any(j.nrows() != k or j.ncols() != n for j in gen):
+        raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
     if cyc:
         try:
@@ -646,21 +644,21 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
             # The list of all possible non-pivot columns:
             fqcols = cartesian_product([colwt(j, r, K) for j in weights_columns])
             for i in fqcols:
+                # The r x w matrix with pivots in ss and non-pivot columns i, which is the
+                # same for every sup
+                MM = []
+                for z in range(w):
+                    if z in ss: # Pivots
+                        MM.append(standard(ss.index(z), r, K))
+                    else: # Non pivots
+                        MM.append(i[comp.index(z)])
+                mat = matrix(K, MM).transpose()
                 for sup in combinations(range(k), w): # All possible supports of weight w
-                    MM = []
-                    for t in range(k):
-                        if t in sup:
-                            if sup.index(t) in ss: # Pivots
-                                MM.append(standard(ss.index(sup.index(t)), r, K))
-                            else: # Non pivots
-                                MM.append(i[comp.index(sup.index(t))])
-                        else:
-                            MM.append([0 for z in range(r)])
-
-                    Mtemp = matrix(K, MM).transpose()
-
+                    # The matrix with the columns of mat in the positions of sup (and zero
+                    # elsewhere), times j, is equal to mat times the rows of j in the
+                    # positions of sup
                     for j in gen_reduced:
-                        Mtempj = Mtemp * j
+                        Mtempj = mat * j.matrix_from_rows(sup)
                         supptemp = len(matrix_supp(Mtempj))
                         if supptemp < ghwub:
                             interd = r - (H2 * Mtempj.transpose()).rank()
