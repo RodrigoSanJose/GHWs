@@ -867,12 +867,12 @@ def rhierarchy(C, C2, L=None, verbose=False):
         Subspace with cardinality of support 3 found
         Current hierarchy: [3]
         r = 2
-        Lower: 4 Upper: 5 Support: 2 Expected: 2
         Current hierarchy: [3, 5]
         [3, 5]
     
     """
     K = C.base_field()
+    q = K.cardinality()
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
@@ -908,7 +908,10 @@ def rhierarchy(C, C2, L=None, verbose=False):
                 except:
                     ghwlb = ghwlb
         else:
-            ghwlb = hierarchyrghw[-1] + 1 
+            # (q^r - 1) M_{r-1} <= (q^r - q) M_r, as for the GHWs (Helleseth, Klove, Levenshtein
+            # and Ytrehus), since the hyperplanes of a subcode that intersects C2 trivially also
+            # intersect C2 trivially. This bound is at least M_{r-1} + 1
+            ghwlb = ceil((q**r - 1) * hierarchyrghw[-1] / (q**r - q))
         ghwub = n - k + r
         w = r
         while w <= k and ghwlb < ghwub: 
@@ -1744,12 +1747,12 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
         Subspace with cardinality of support 3 found
         Current hierarchy: [3]
         r = 2
-        Lower: 4 Upper: 5 Support: 2 Expected: 2
         Current hierarchy: [3, 5]
         [3, 5]
     
     """
     K = C.base_field()
+    q = K.cardinality()
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
@@ -1785,7 +1788,10 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
                 except:
                     ghwlb = ghwlb
         else:
-            ghwlb = hierarchyrghw[-1] + 1 
+            # (q^r - 1) M_{r-1} <= (q^r - q) M_r, as for the GHWs (Helleseth, Klove, Levenshtein
+            # and Ytrehus), since the hyperplanes of a subcode that intersects C2 trivially also
+            # intersect C2 trivially. This bound is at least M_{r-1} + 1
+            ghwlb = ceil((q**r - 1) * hierarchyrghw[-1] / (q**r - q))
         ghwub = n - k + r
         w = r
         while w <= k and ghwlb < ghwub: 
