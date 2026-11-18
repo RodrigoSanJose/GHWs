@@ -232,7 +232,7 @@ def information(G):
         [0, 7]]
 
     """
-    G = G.rref() 
+    G = G.dense_matrix().rref() # Dense, so that the generator matrices below are dense
     n = G.ncols()
     k = G.rank()
     G = G.matrix_from_rows(range(k)) # We remove the zero rows (if G has redundant rows)
@@ -240,14 +240,12 @@ def information(G):
     inf_sets = []
     gen_mats = []
     sup = list(matrix_supp(G))
-    nn = len(sup)
     GG = copy(G)
     P = range(1, n + 1)
     comp = sup # This contains the complement of the coordinates already
     # covered by the information sets in inf_sets
-    while len(flatten(inf_sets)) < nn:
-        GG = matrix(K, [G.columns()[i] for i in comp]).transpose() # We restrict
-        # to the columns of G not yet covered 
+    while comp: # Until the information sets cover the support of C
+        GG = G.matrix_from_columns(comp) # We restrict to the columns of G not yet covered
 
         # We compute an information set
         Itemp = list(GG.pivots())
@@ -272,9 +270,9 @@ def information(G):
         P = Permutation(Itemp2 + [i for i in range(1, n + 1) if i not in Itemp2])
         # We put the columns associated to the indices of Itemp first, and 
         # compute the reduced row echelon form
-        PG = matrix(K, P.action(G.columns())).transpose().rref()
+        PG = G.matrix_from_columns([i - 1 for i in P]).rref()
         # We go back to the initial ordering of the columns
-        PPG = matrix(K, P.inverse().action(PG.columns())).transpose()
+        PPG = PG.matrix_from_columns([i - 1 for i in P.inverse()])
         gen_mats.append(PPG)        
     
         I = flatten(inf_sets)
