@@ -311,8 +311,8 @@ def matrix_supp(M):
     
     """
     sup = set()
-    for i in M:
-        sup.update(i.support())
+    for i in range(M.nrows()): # Faster than computing the supports of the rows as vectors
+        sup.update(M.nonzero_positions_in_row(i))
     return sup
 
 def subspaces(r, w, n, K):
@@ -455,7 +455,6 @@ def GHW(C, r, L=None, verbose=False):
     nsupp = len(matrix_supp(G)) # Cardinality of the support of C
     if r not in range(1, k + 1):
         raise Exception('Invalid value of r')
-    binary_r1 = r == 1 and K.order() == 2
     # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
@@ -510,10 +509,7 @@ def GHW(C, r, L=None, verbose=False):
             gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
             for mat in rrefs:
                 for j in gen_rows:
-                    if binary_r1:
-                        supptemp = (mat * j).row(0).hamming_weight()
-                    else:
-                        supptemp = len(matrix_supp(mat * j))
+                    supptemp = len(matrix_supp(mat * j))
                     if supptemp < ghwub:
                         ghwub = supptemp
                         if verbose:
