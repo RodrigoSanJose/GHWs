@@ -85,6 +85,8 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if k > 0 and not gen:
+        raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
@@ -243,6 +245,8 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if k > 0 and not gen:
+        raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
@@ -393,6 +397,8 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if k > 0 and not gen:
+        raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
@@ -577,6 +583,8 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
         else:
             L = information(G)
     [inf, gen, red] = L
+    if k > 0 and not gen:
+        raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r

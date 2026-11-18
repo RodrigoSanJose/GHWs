@@ -150,5 +150,26 @@ for args in [{'L': information(H), 'strategy': 'dual'}, {'strategy': 'other'}, {
         continue
     raise Exception("Error with the arguments of hierarchy")
 
+# An empty generator list must fail before the search computes its bounds.
+G = matrix(K, [[1, 0, 1, 0], [0, 1, 1, 1]])
+C = LinearCode(G)
+C2 = LinearCode(G[:1])
+for searches, args in (
+    ((GHW, GHW_low_mem), (C, 1)),
+    ((hierarchy, hierarchy_low_mem), (C,)),
+    ((RGHW, RGHW_low_mem), (C, C2, 1)),
+    ((rhierarchy, rhierarchy_low_mem), (C, C2)),
+    ((GHW_bound, GHW_bound_low_mem), (C, 1, 2)),
+    ((RGHW_bound, RGHW_bound_low_mem), (C, C2, 1, 2)),
+):
+    for search in searches:
+        try:
+            search(*args, L=[[], [], []])
+        except ValueError as error:
+            if str(error) != 'L[1] must contain at least one generator matrix':
+                raise
+        else:
+            raise Exception(f"{search.__name__} accepted an empty generator list in L")
+
 end = time.time()
 print('Total time:', end - start)
