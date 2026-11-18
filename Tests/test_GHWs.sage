@@ -125,10 +125,10 @@ for G, hie, dual in tests:
     C = LinearCode(G)
     if not auto_route(C) == (hie, dual) or not all(hierarchy(C, strategy=s) == hie for s in ['direct', 'dual']) or not hie == [GHW(C, r) for r in srange(1, C.dimension() + 1)]:
         raise Exception("Error with the strategies of hierarchy")
-# With L given, 'auto' uses the direct route, although 2k > n for H
-if not auto_route(LinearCode(H), information(H)) == ([3, 5, 6, 7], False):
+# With L given (here from a redundant generating set), 'auto' uses the direct route, although 2k > n for H
+if not auto_route(LinearCode(H), information(H.stack(H))) == ([3, 5, 6, 7], False):
     raise Exception("Error with the strategies of hierarchy")
-for args in [{'L': information(H), 'strategy': 'dual'}, {'strategy': 'other'}]:
+for args in [{'L': information(H), 'strategy': 'dual'}, {'strategy': 'other'}, {'L': [[[0, 1, 2]], [H[:3]], [0]]}]:
     try:
         hierarchy(LinearCode(H), **args)
     except Exception:

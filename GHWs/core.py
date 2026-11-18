@@ -235,6 +235,7 @@ def information(G):
     G = G.rref() 
     n = G.ncols()
     k = G.rank()
+    G = G.matrix_from_rows(range(k)) # We remove the zero rows (if G has redundant rows)
     K = G.base_ring()
     inf_sets = []
     gen_mats = []
@@ -461,6 +462,8 @@ def GHW(C, r, L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if any(j.nrows() != k or j.ncols() != n for j in gen):
+        raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
     if cyc:
         try:
@@ -623,6 +626,8 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if any(j.nrows() != k or j.ncols() != n for j in gen):
+        raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     hierarchyghw = []
     for r in range(1, k + 1):
         if verbose:
@@ -753,6 +758,8 @@ def RGHW(C, C2, r, L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if any(j.nrows() != k or j.ncols() != n for j in gen):
+        raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
     if cyc:
         try:
@@ -876,6 +883,8 @@ def rhierarchy(C, C2, L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if any(j.nrows() != k or j.ncols() != n for j in gen):
+        raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     hierarchyrghw = []
     for r in range(1, k - k2 + 1):
         if verbose:
@@ -1245,6 +1254,8 @@ def GHW_low_mem(C, r, L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if any(j.nrows() != k or j.ncols() != n for j in gen):
+        raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
     if cyc:
         try:
@@ -1434,6 +1445,8 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if any(j.nrows() != k or j.ncols() != n for j in gen):
+        raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     hierarchyghw = []
     for r in range(1, k + 1):
         if verbose:
@@ -1593,6 +1606,8 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if any(j.nrows() != k or j.ncols() != n for j in gen):
+        raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
     if cyc:
         try:
@@ -1745,6 +1760,8 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if any(j.nrows() != k or j.ncols() != n for j in gen):
+        raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     hierarchyrghw = []
     for r in range(1, k - k2 + 1):
         if verbose:
