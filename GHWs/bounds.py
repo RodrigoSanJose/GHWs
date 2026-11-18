@@ -90,7 +90,8 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
-    binary = K.order() == 2 # Over GF(2), the rows of the matrices are used as integers
+    # Encode the rows as integers if every operand is over GF(2).
+    binary = K.order() == 2 and all(j.base_ring() == K for j in gen)
     if binary:
         gen_bits = [binary_rows(j) for j in gen]
     ghwlb = r
@@ -263,7 +264,8 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
-    binary = K.order() == 2 # Over GF(2), the rows of the matrices are used as integers
+    # Encode the rows as integers if every operand is over GF(2).
+    binary = K.order() == 2 and H2.base_ring() == K and all(j.base_ring() == K for j in gen)
     if binary: # The rows of each j in gen and of j * H2^T (for the intersection with C2)
         gen_bits = [[binary_rows(j), binary_rows(j * H2.transpose())] for j in gen]
     ghwlb = r
@@ -431,7 +433,8 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
-    binary = K.order() == 2 # Over GF(2), the rows of the matrices are used as integers
+    # Encode the rows as integers if every operand is over GF(2).
+    binary = K.order() == 2 and all(j.base_ring() == K for j in gen)
     if binary:
         gen_bits = [binary_rows(j) for j in gen]
     ghwlb = r
@@ -628,7 +631,8 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
-    binary = K.order() == 2 # Over GF(2), the rows of the matrices are used as integers
+    # Encode the rows as integers if every operand is over GF(2).
+    binary = K.order() == 2 and H2.base_ring() == K and all(j.base_ring() == K for j in gen)
     if binary: # The rows of each j in gen and of j * H2^T (for the intersection with C2)
         gen_bits = [[binary_rows(j), binary_rows(j * H2.transpose())] for j in gen]
     ghwlb = r

@@ -560,7 +560,8 @@ def GHW(C, r, L=None, verbose=False):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
-    binary = K.order() == 2 # Over GF(2), the rows of the matrices are used as integers
+    # Encode the rows as integers if every operand is over GF(2).
+    binary = K.order() == 2 and all(j.base_ring() == K for j in gen)
     if binary:
         gen_bits = [binary_rows(j) for j in gen]
     ghwlb = r
@@ -734,7 +735,8 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
-    binary = K.order() == 2 # Over GF(2), the rows of the matrices are used as integers
+    # Encode the rows as integers if every operand is over GF(2).
+    binary = K.order() == 2 and all(j.base_ring() == K for j in gen)
     if binary:
         gen_bits = [binary_rows(j) for j in gen]
     hierarchyghw = []
@@ -884,7 +886,8 @@ def RGHW(C, C2, r, L=None, verbose=False):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
-    binary = K.order() == 2 # Over GF(2), the rows of the matrices are used as integers
+    # Encode the rows as integers if every operand is over GF(2).
+    binary = K.order() == 2 and H2.base_ring() == K and all(j.base_ring() == K for j in gen)
     if binary: # The rows of each j in gen and of j * H2^T (for the intersection with C2)
         gen_bits = [[binary_rows(j), binary_rows(j * H2.transpose())] for j in gen]
     ghwlb = r
@@ -1027,7 +1030,8 @@ def rhierarchy(C, C2, L=None, verbose=False):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
-    binary = K.order() == 2 # Over GF(2), the rows of the matrices are used as integers
+    # Encode the rows as integers if every operand is over GF(2).
+    binary = K.order() == 2 and H2.base_ring() == K and all(j.base_ring() == K for j in gen)
     if binary: # The rows of each j in gen and of j * H2^T (for the intersection with C2)
         gen_bits = [[binary_rows(j), binary_rows(j * H2.transpose())] for j in gen]
     hierarchyrghw = []
@@ -1193,7 +1197,7 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
     if R is None:
         R = range(k + 1)     
     # Over GF(2), the rows of G are used as integers (unless the subspaces are stored)
-    binary = K.order() == 2 and not subspace_list
+    binary = K.order() == 2 and not subspace_list and G.base_ring() == K
     if binary:
         G_bits = binary_rows(G)
     for r in R:
@@ -1321,7 +1325,8 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
         
     # Over GF(2), the rows of G and of G * H2^T are used as integers (unless the subspaces
     # are stored), see binary_supp and binary_rank
-    binary = K.order() == 2 and not subspace_list
+    binary = (K.order() == 2 and not subspace_list and G.base_ring() == K
+              and H2.base_ring() == K)
     if binary:
         G_bits = binary_rows(G)
         G_syn = binary_rows(G * H2.transpose())
@@ -1436,7 +1441,8 @@ def GHW_low_mem(C, r, L=None, verbose=False):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
-    binary = K.order() == 2 # Over GF(2), the rows of the matrices are used as integers
+    # Encode the rows as integers if every operand is over GF(2).
+    binary = K.order() == 2 and all(j.base_ring() == K for j in gen)
     if binary:
         gen_bits = [binary_rows(j) for j in gen]
     ghwlb = r
@@ -1635,7 +1641,8 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
-    binary = K.order() == 2 # Over GF(2), the rows of the matrices are used as integers
+    # Encode the rows as integers if every operand is over GF(2).
+    binary = K.order() == 2 and all(j.base_ring() == K for j in gen)
     if binary:
         gen_bits = [binary_rows(j) for j in gen]
     hierarchyghw = []
@@ -1812,7 +1819,8 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
-    binary = K.order() == 2 # Over GF(2), the rows of the matrices are used as integers
+    # Encode the rows as integers if every operand is over GF(2).
+    binary = K.order() == 2 and H2.base_ring() == K and all(j.base_ring() == K for j in gen)
     if binary: # The rows of each j in gen and of j * H2^T (for the intersection with C2)
         gen_bits = [[binary_rows(j), binary_rows(j * H2.transpose())] for j in gen]
     ghwlb = r
@@ -1982,7 +1990,8 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
-    binary = K.order() == 2 # Over GF(2), the rows of the matrices are used as integers
+    # Encode the rows as integers if every operand is over GF(2).
+    binary = K.order() == 2 and H2.base_ring() == K and all(j.base_ring() == K for j in gen)
     if binary: # The rows of each j in gen and of j * H2^T (for the intersection with C2)
         gen_bits = [[binary_rows(j), binary_rows(j * H2.transpose())] for j in gen]
     hierarchyrghw = []
@@ -2175,7 +2184,7 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
     if R is None:
         R = range(k + 1)     
     # Over GF(2), the rows of G are used as integers (unless the subspaces are stored)
-    binary = K.order() == 2 and not subspace_list
+    binary = K.order() == 2 and not subspace_list and G.base_ring() == K
     if binary:
         G_bits = binary_rows(G)
     for r in R:
@@ -2329,7 +2338,8 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
         
     # Over GF(2), the rows of G and of G * H2^T are used as integers (unless the subspaces
     # are stored), see binary_supp and binary_rank
-    binary = K.order() == 2 and not subspace_list
+    binary = (K.order() == 2 and not subspace_list and G.base_ring() == K
+              and H2.base_ring() == K)
     if binary:
         G_bits = binary_rows(G)
         G_syn = binary_rows(G * H2.transpose())

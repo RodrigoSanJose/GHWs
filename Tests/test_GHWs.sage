@@ -171,5 +171,34 @@ for searches, args in (
         else:
             raise Exception(f"{search.__name__} accepted an empty generator list in L")
 
+# Integer lifts of binary generators must be reduced modulo two.
+C2 = LinearCode(G[1:])
+L = information(G)
+L[1] = [matrix(ZZ, [[1 if entry else 2 for entry in row] for row in generator])
+        for generator in L[1]]
+for searches, args, kwargs, expected in (
+    ((GHW, GHW_low_mem), (C, 1), {}, 2),
+    ((hierarchy, hierarchy_low_mem), (C,), {}, [2, 4]),
+    ((RGHW, RGHW_low_mem), (C, C2, 1), {}, 2),
+    ((rhierarchy, rhierarchy_low_mem), (C, C2), {}, [2]),
+    ((GHW_bound, GHW_bound_low_mem), (C, 1, 2), {'bound_type': 'upper'}, True),
+    ((RGHW_bound, RGHW_bound_low_mem), (C, C2, 1, 2), {'bound_type': 'upper'}, True),
+):
+    for search in searches:
+        if search(*args, L=L, **kwargs) != expected:
+            raise Exception(f"Error with integer generator lifts in {search.__name__}")
+
+# Relative spectrum counts must agree with Sage's extension-field rank test.
+C = LinearCode(identity_matrix(K, 3))
+F = GF(4, 'a')
+a = F.gen()
+C2 = LinearCode(matrix(F, [[1, a, a]]))
+expected = {1: {1: 3, 2: 3, 3: 1}, 2: {2: 3, 3: 3}}
+for spectrum in (rhigher_spectrum, rhigher_spectrum_low_mem):
+    counts = spectrum(C, C2, R=[1, 2])
+    stored_counts, _ = spectrum(C, C2, R=[1, 2], subspace_list=True)
+    if counts != expected or stored_counts != expected:
+        raise Exception(f"Error with extension-field ranks in {spectrum.__name__}")
+
 end = time.time()
 print('Total time:', end - start)
