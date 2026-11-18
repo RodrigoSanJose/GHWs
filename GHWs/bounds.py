@@ -478,9 +478,10 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
                 for sup in combinations(range(k), w): # All possible supports of weight w
                     # The matrix with the columns of mat in the positions of sup (and zero
                     # elsewhere), times j, is equal to mat times the rows of j in the
-                    # positions of sup
+                    # positions of sup (all of j if w = k, so then j is not copied)
                     for j in gen_reduced:
-                        supptemp = len(matrix_supp(mat * j.matrix_from_rows(sup)))
+                        rows = j if w == k else j.matrix_from_rows(sup)
+                        supptemp = len(matrix_supp(mat * rows))
                         if supptemp < ghwub:
                             ghwub = supptemp
                             if verbose:
@@ -664,9 +665,10 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
                 for sup in combinations(range(k), w): # All possible supports of weight w
                     # The matrix with the columns of mat in the positions of sup (and zero
                     # elsewhere), times j, is equal to mat times the rows of j in the
-                    # positions of sup
+                    # positions of sup (all of j if w = k, so then j is not copied)
                     for j in gen_reduced:
-                        Mtempj = mat * j.matrix_from_rows(sup)
+                        rows = j if w == k else j.matrix_from_rows(sup)
+                        Mtempj = mat * rows
                         supptemp = len(matrix_supp(Mtempj))
                         if supptemp < ghwub:
                             interd = r - (H2 * Mtempj.transpose()).rank()

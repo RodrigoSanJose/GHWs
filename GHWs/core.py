@@ -1319,9 +1319,10 @@ def GHW_low_mem(C, r, L=None, verbose=False):
                 for sup in combinations(range(k), w): # All possible supports of weight w
                     # The matrix with the columns of mat in the positions of sup (and zero
                     # elsewhere), times j, is equal to mat times the rows of j in the
-                    # positions of sup
+                    # positions of sup (all of j if w = k, so then j is not copied)
                     for j in gen_reduced:
-                        supptemp = len(matrix_supp(mat * j.matrix_from_rows(sup)))
+                        rows = j if w == k else j.matrix_from_rows(sup)
+                        supptemp = len(matrix_supp(mat * rows))
                         if supptemp < ghwub:
                             ghwub = supptemp
                             if verbose:
@@ -1518,9 +1519,10 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
                     for sup in combinations(range(k), w): # All possible supports of weight w
                         # The matrix with the columns of mat in the positions of sup (and zero
                         # elsewhere), times j, is equal to mat times the rows of j in the
-                        # positions of sup
+                        # positions of sup (all of j if w = k, so then j is not copied)
                         for j in gen_reduced:
-                            supptemp = len(matrix_supp(mat * j.matrix_from_rows(sup)))
+                            rows = j if w == k else j.matrix_from_rows(sup)
+                            supptemp = len(matrix_supp(mat * rows))
                             if supptemp < ghwub:
                                 ghwub = supptemp
                                 if verbose:
@@ -1673,9 +1675,10 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
                 for sup in combinations(range(k), w): # All possible supports of weight w
                     # The matrix with the columns of mat in the positions of sup (and zero
                     # elsewhere), times j, is equal to mat times the rows of j in the
-                    # positions of sup
+                    # positions of sup (all of j if w = k, so then j is not copied)
                     for j in gen_reduced:
-                        Mtempj = mat * j.matrix_from_rows(sup)
+                        rows = j if w == k else j.matrix_from_rows(sup)
+                        Mtempj = mat * rows
                         supptemp = len(matrix_supp(Mtempj))
                         if supptemp < ghwub:
                             interd = r - (H2 * Mtempj.transpose()).rank()
@@ -1839,9 +1842,10 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
                     for sup in combinations(range(k), w): # All possible supports of weight w
                         # The matrix with the columns of mat in the positions of sup (and zero
                         # elsewhere), times j, is equal to mat times the rows of j in the
-                        # positions of sup
+                        # positions of sup (all of j if w = k, so then j is not copied)
                         for j in gen_reduced:
-                            Mtempj = mat * j.matrix_from_rows(sup)
+                            rows = j if w == k else j.matrix_from_rows(sup)
+                            Mtempj = mat * rows
                             supptemp = len(matrix_supp(Mtempj))
                             if supptemp < ghwub:
                                 interd = r - (H2 * Mtempj.transpose()).rank()
@@ -1988,8 +1992,9 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
                     for sup in combinations(range(k), w): # All possible supports of weight w
                         # The matrix with the columns of mat in the positions of sup (and zero
                         # elsewhere), times G, is equal to mat times the rows of G in the
-                        # positions of sup
-                        Mtemp = mat * G.matrix_from_rows(sup)
+                        # positions of sup (all of G if w = k, so then G is not copied)
+                        rows = G if w == k else G.matrix_from_rows(sup)
+                        Mtemp = mat * rows
                         supptemp = len(matrix_supp(Mtemp))
                         spectemp[supptemp] = spectemp.get(supptemp, 0) + 1
                         if subspace_list:
@@ -2129,8 +2134,9 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
                     for sup in combinations(range(k), w): # All possible supports of weight w
                         # The matrix with the columns of mat in the positions of sup (and zero
                         # elsewhere), times G, is equal to mat times the rows of G in the
-                        # positions of sup
-                        Mtemp = mat * G.matrix_from_rows(sup)
+                        # positions of sup (all of G if w = k, so then G is not copied)
+                        rows = G if w == k else G.matrix_from_rows(sup)
+                        Mtemp = mat * rows
                         supptemp = len(matrix_supp(Mtemp))
                         interd = r - (H2 * Mtemp.transpose()).rank()
                         if interd == 0:
