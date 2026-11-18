@@ -498,17 +498,12 @@ def GHW(C, r, L=None, verbose=False):
         terminate = False
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         for y in combinations(range(k), w): # All possible supports of weight w
+            # The matrix with the columns of mat in the positions of y (and zero elsewhere),
+            # times j, is equal to mat times the rows of j in the positions of y
+            gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
             for mat in rrefs:
-                cols = mat.columns()
-                MM = []
-                for t in range(k):
-                    if t in y:
-                        MM.append(cols[y.index(t)])
-                    else:
-                        MM.append([0 for z in range(r)])
-                Mtemp = matrix(MM).transpose()
-                for j in gen_reduced:
-                    supptemp = len(matrix_supp(Mtemp * j))
+                for j in gen_rows:
+                    supptemp = len(matrix_supp(mat * j))
                     if supptemp < ghwub:
                         ghwub = supptemp
                         if verbose:
@@ -673,17 +668,12 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
             terminate = False
             rrefs = subspaces(r, w, w, K)  # All reduced row echelon forms in the first w columns
             for y in combinations(range(k), w): # All possible supports of weight w
+                # The matrix with the columns of mat in the positions of y (and zero elsewhere),
+                # times j, is equal to mat times the rows of j in the positions of y
+                gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
                 for mat in rrefs:
-                    cols = mat.columns()
-                    MM = []
-                    for t in range(k):
-                        if t in y:
-                            MM.append(cols[y.index(t)])
-                        else:
-                            MM.append([0 for z in range(r)])
-                    Mtemp = matrix(MM).transpose()
-                    for j in gen_reduced:
-                        supptemp = len(matrix_supp(Mtemp * j))
+                    for j in gen_rows:
+                        supptemp = len(matrix_supp(mat * j))
                         if supptemp < ghwub:
                             ghwub = supptemp
                             if verbose:
@@ -800,17 +790,12 @@ def RGHW(C, C2, r, L=None, verbose=False):
         terminate = False
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         for y in combinations(range(k), w): # All possible supports of weight w
+            # The matrix with the columns of mat in the positions of y (and zero elsewhere),
+            # times j, is equal to mat times the rows of j in the positions of y
+            gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
             for mat in rrefs:
-                cols = mat.columns()
-                MM = []
-                for t in range(k):
-                    if t in y:
-                        MM.append(cols[y.index(t)])
-                    else:
-                        MM.append([0 for z in range(r)])
-                Mtemp = matrix(MM).transpose()
-                for j in gen_reduced:
-                    Mtempj = Mtemp * j
+                for j in gen_rows:
+                    Mtempj = mat * j
                     supptemp = len(matrix_supp(Mtempj))
                     if supptemp < ghwub:
                         interd = r - (H2 * Mtempj.transpose()).rank()
@@ -935,17 +920,12 @@ def rhierarchy(C, C2, L=None, verbose=False):
             terminate = False
             rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
             for y in combinations(range(k), w): # All possible supports of weight w
+                # The matrix with the columns of mat in the positions of y (and zero elsewhere),
+                # times j, is equal to mat times the rows of j in the positions of y
+                gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
                 for mat in rrefs:
-                    cols = mat.columns()
-                    MM = []
-                    for t in range(k):
-                        if t in y:
-                            MM.append(cols[y.index(t)])
-                        else:
-                            MM.append([0 for z in range(r)])
-                    Mtemp = matrix(MM).transpose()
-                    for j in gen_reduced:
-                        Mtempj = Mtemp * j
+                    for j in gen_rows:
+                        Mtempj = mat * j
                         supptemp = len(matrix_supp(Mtempj))
                         if supptemp < ghwub:
                             interd = r - (H2 * Mtempj.transpose()).rank()
