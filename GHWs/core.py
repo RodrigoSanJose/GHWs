@@ -1176,9 +1176,9 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
                 G_rows = G.matrix_from_rows(y)
                 for mat in rrefs:
                     Mtemp = mat * G_rows
-                    supptemp = len(matrix_supp(Mtemp))
                     interd = r - (H2 * Mtemp.transpose()).rank()
                     if interd == 0:
+                        supptemp = len(matrix_supp(Mtemp))
                         spectemp[supptemp] = spectemp.get(supptemp, 0) + 1
                         if subspace_list:
                             subsptemp.setdefault(supptemp, []).append(Mtemp)
@@ -2135,9 +2135,9 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
                         # positions of sup (all of G if w = k, so then G is not copied)
                         rows = G if w == k else G.matrix_from_rows(sup)
                         Mtemp = mat * rows
-                        supptemp = len(matrix_supp(Mtemp))
                         interd = r - (H2 * Mtemp.transpose()).rank()
                         if interd == 0:
+                            supptemp = len(matrix_supp(Mtemp))
                             spectemp[supptemp] = spectemp.get(supptemp, 0) + 1
                             if subspace_list:
                                 subsptemp.setdefault(supptemp, []).append(Mtemp)
