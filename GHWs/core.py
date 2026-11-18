@@ -1208,6 +1208,8 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue 
+        if not binary:
+            G = G.dense_matrix()
         spectemp = {}
         if subspace_list:
             subsptemp = {}
@@ -1335,6 +1337,8 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue  
+        if not binary:
+            G = G.dense_matrix()
         spectemp = {}
         if subspace_list:
             subsptemp = {}
@@ -2186,6 +2190,8 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue 
+        if not binary:
+            G = G.dense_matrix()
         spectemp = {}
         if subspace_list:
             subsptemp = {}
@@ -2339,6 +2345,8 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
             if verbose:
                 print('Spectrum:', spec[r]) 
             continue  
+        if not binary:
+            G = G.dense_matrix()
         spectemp = {}
         if subspace_list:
             subsptemp = {}
