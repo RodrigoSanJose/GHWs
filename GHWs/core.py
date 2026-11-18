@@ -27,6 +27,7 @@
 
 # Required imports
 # Standard library
+from collections import defaultdict
 from itertools import combinations
 from copy import copy
 
@@ -1045,7 +1046,7 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
             continue 
         spectemp = {}
         if subspace_list:
-            subsptemp = {}
+            subsptemp = defaultdict(list)
         for w in range(r, k + 1):
             rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
             for y in combinations(range(k), w): # All possible supports of weight w
@@ -1060,10 +1061,7 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
                     except:
                         spectemp.update({supptemp: 1})
                     if subspace_list:
-                        try:
-                            subsptemp.update({supptemp: subsptemp[supptemp] + [Mtemp]})
-                        except:
-                            subsptemp.update({supptemp: [Mtemp]})
+                        subsptemp[supptemp].append(Mtemp)
             if verbose:
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
@@ -1166,7 +1164,7 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
             continue  
         spectemp = {}
         if subspace_list:
-            subsptemp = {}
+            subsptemp = defaultdict(list)
         for w in range(r, k + 1):
             rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
             for y in combinations(range(k), w): # All possible supports of weight w
@@ -1183,10 +1181,7 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
                         except:
                             spectemp.update({supptemp: 1})
                         if subspace_list:
-                            try:
-                                subsptemp.update({supptemp: subsptemp[supptemp] + [Mtemp]})
-                            except:
-                                subsptemp.update({supptemp: [Mtemp]})
+                            subsptemp[supptemp].append(Mtemp)
             if verbose:
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
@@ -1951,7 +1946,7 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
             continue 
         spectemp = {}
         if subspace_list:
-            subsptemp = {}
+            subsptemp = defaultdict(list)
         for w in range(r, k + 1):
             y = range(w) # We start with support {1,...,w}
             for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
@@ -1990,10 +1985,7 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
                         except:
                             spectemp.update({supptemp: 1})
                         if subspace_list:
-                            try:
-                                subsptemp.update({supptemp: subsptemp[supptemp] + [Mtemp]})
-                            except:
-                                subsptemp.update({supptemp: [Mtemp]})
+                            subsptemp[supptemp].append(Mtemp)
             if verbose:
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
@@ -2098,7 +2090,7 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
             continue  
         spectemp = {}
         if subspace_list:
-            subsptemp = {}
+            subsptemp = defaultdict(list)
         for w in range(r, k + 1):
             y = range(w) # We start with support {1,...,w}
             for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
@@ -2139,10 +2131,7 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
                             except:
                                 spectemp.update({supptemp: 1})
                             if subspace_list:
-                                try:
-                                    subsptemp.update({supptemp: subsptemp[supptemp] + [Mtemp]})
-                                except:
-                                    subsptemp.update({supptemp: [Mtemp]})
+                                subsptemp[supptemp].append(Mtemp)
             if verbose:
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
