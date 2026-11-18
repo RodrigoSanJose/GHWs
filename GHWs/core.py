@@ -455,6 +455,7 @@ def GHW(C, r, L=None, verbose=False):
     nsupp = len(matrix_supp(G)) # Cardinality of the support of C
     if r not in range(1, k + 1):
         raise Exception('Invalid value of r')
+    binary_r1 = r == 1 and K.order() == 2
     # Only cyclic codes with non-repeated roots are considered
     cyc = is_cyclic(C) and list(G.pivots()) == srange(k)
     if L is None:
@@ -463,6 +464,8 @@ def GHW(C, r, L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if k > 0 and not gen:
+        raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
@@ -507,7 +510,10 @@ def GHW(C, r, L=None, verbose=False):
             gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
             for mat in rrefs:
                 for j in gen_rows:
-                    supptemp = len(matrix_supp(mat * j))
+                    if binary_r1:
+                        supptemp = (mat * j).row(0).hamming_weight()
+                    else:
+                        supptemp = len(matrix_supp(mat * j))
                     if supptemp < ghwub:
                         ghwub = supptemp
                         if verbose:
@@ -627,6 +633,8 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if k > 0 and not gen:
+        raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     hierarchyghw = []
@@ -759,6 +767,8 @@ def RGHW(C, C2, r, L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if k > 0 and not gen:
+        raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
@@ -884,6 +894,8 @@ def rhierarchy(C, C2, L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if k > 0 and not gen:
+        raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     hierarchyrghw = []
@@ -1249,6 +1261,8 @@ def GHW_low_mem(C, r, L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if k > 0 and not gen:
+        raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
@@ -1440,6 +1454,8 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if k > 0 and not gen:
+        raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     hierarchyghw = []
@@ -1601,6 +1617,8 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if k > 0 and not gen:
+        raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     ghwlb = r
@@ -1755,6 +1773,8 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
         else:
             L = information(G)
     [inf, gen, red] = L
+    if k > 0 and not gen:
+        raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
     hierarchyrghw = []
