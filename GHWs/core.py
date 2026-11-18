@@ -423,10 +423,10 @@ def subspaces(r, w, n, K):
         [
         [1 0 1 0]  [1 0 0 0]  [1 0 1 0]  [1 1 0 0]  [1 0 0 1]  [1 0 0 0]
         [0 1 0 0], [0 1 1 0], [0 1 1 0], [0 0 1 0], [0 1 0 0], [0 1 0 1],
-        
+        <BLANKLINE>
         [1 0 0 1]  [1 1 0 0]  [1 0 0 1]  [1 0 0 0]  [1 0 0 1]  [1 0 1 0]
         [0 1 0 1], [0 0 0 1], [0 0 1 0], [0 0 1 1], [0 0 1 1], [0 0 0 1],
-        
+        <BLANKLINE>
         [0 1 0 1]  [0 1 0 0]  [0 1 0 1]  [0 1 1 0]
         [0 0 1 0], [0 0 1 1], [0 0 1 1], [0 0 0 1]
         ]
@@ -1159,7 +1159,7 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
          2: {5: 21, 6: 357, 7: 2472},
          3: {6: 7, 7: 393},
          4: {7: 1}}
-        sage: higher_spectrum(C, verbose=True) 
+        sage: higher_spectrum(C, verbose=True) # not tested
         r = 0
         Spectrum: {0: 1}
         r = 1
@@ -1281,7 +1281,7 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
         sage: C2 = LinearCode(G2)
         sage: rhigher_spectrum(C, C2)
         {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
-        sage: rhigher_spectrum(C, C2, verbose=True)
+        sage: rhigher_spectrum(C, C2, verbose=True) # not tested
         r = 0
         Spectrum: {0: 1}
         r = 1
@@ -2146,7 +2146,7 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
          2: {5: 21, 6: 357, 7: 2472},
          3: {6: 7, 7: 393},
          4: {7: 1}}
-        sage: higher_spectrum_low_mem(C, verbose=True) 
+        sage: higher_spectrum_low_mem(C, verbose=True) # not tested
         r = 0
         Spectrum: {0: 1}
         r = 1
@@ -2294,7 +2294,7 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
         sage: C2 = LinearCode(G2)
         sage: rhigher_spectrum_low_mem(C, C2)
         {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
-        sage: rhigher_spectrum_low_mem(C, C2, verbose=True)
+        sage: rhigher_spectrum_low_mem(C, C2, verbose=True) # not tested
         r = 0
         Spectrum: {0: 1}
         r = 1
