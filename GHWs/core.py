@@ -577,20 +577,14 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
         Lower: 14 Upper: 16 Support: 3 Expected: 3
         Current hierarchy: [16]
         r = 2
-        Lower: 17 Upper: 28 Support: 2 Expected: 5
+        Lower: 24 Upper: 28 Support: 2 Expected: 5
         Subspace with cardinality of support 24 found
-        Lower: 17 Upper: 24 Support: 3 Expected: 4
-        Lower: 20 Upper: 24 Support: 4 Expected: 4
         Current hierarchy: [16, 24]
         r = 3
-        Lower: 25 Upper: 29 Support: 3 Expected: 5
+        Lower: 28 Upper: 29 Support: 3 Expected: 5
         Subspace with cardinality of support 28 found
-        Lower: 25 Upper: 28 Support: 4 Expected: 5
-        Lower: 26 Upper: 28 Support: 5 Expected: 5
         Current hierarchy: [16, 24, 28]
         r = 4
-        Lower: 29 Upper: 30 Support: 4 Expected: 5
-        Lower: 29 Upper: 30 Support: 5 Expected: 5
         Current hierarchy: [16, 24, 28, 30]
         r = 5
         Current hierarchy: [16, 24, 28, 30, 31]
@@ -607,6 +601,7 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
     if strategy == 'dual' and L is not None:
         raise Exception("L cannot be used with strategy='dual'")
     K = C.base_field()
+    q = K.cardinality()
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
@@ -649,7 +644,10 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
                 except:
                     ghwlb = ghwlb
         else:
-            ghwlb = hierarchyghw[-1] + 1 
+            # (q^r - 1) d_{r-1} <= (q^r - q) d_r (Helleseth, Klove, Levenshtein and Ytrehus),
+            # since each coordinate in the support of an r-dimensional subcode is outside the
+            # support of exactly one of its hyperplanes. This bound is at least d_{r-1} + 1
+            ghwlb = ceil((q**r - 1) * hierarchyghw[-1] / (q**r - q))
         ghwub = nsupp - k + r # Singleton bound for C punctured on its support
         w = r
         while w <= k and ghwlb < ghwub: 
@@ -1398,20 +1396,14 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
         Lower: 14 Upper: 16 Support: 3 Expected: 3
         Current hierarchy: [16]
         r = 2
-        Lower: 17 Upper: 28 Support: 2 Expected: 5
+        Lower: 24 Upper: 28 Support: 2 Expected: 5
         Subspace with cardinality of support 24 found
-        Lower: 17 Upper: 24 Support: 3 Expected: 4
-        Lower: 20 Upper: 24 Support: 4 Expected: 4
         Current hierarchy: [16, 24]
         r = 3
-        Lower: 25 Upper: 29 Support: 3 Expected: 5
+        Lower: 28 Upper: 29 Support: 3 Expected: 5
         Subspace with cardinality of support 28 found
-        Lower: 25 Upper: 28 Support: 4 Expected: 5
-        Lower: 26 Upper: 28 Support: 5 Expected: 5
         Current hierarchy: [16, 24, 28]
         r = 4
-        Lower: 29 Upper: 30 Support: 4 Expected: 5
-        Lower: 29 Upper: 30 Support: 5 Expected: 5
         Current hierarchy: [16, 24, 28, 30]
         r = 5
         Current hierarchy: [16, 24, 28, 30, 31]
@@ -1428,6 +1420,7 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
     if strategy == 'dual' and L is not None:
         raise Exception("L cannot be used with strategy='dual'")
     K = C.base_field()
+    q = K.cardinality()
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
@@ -1470,7 +1463,10 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
                 except:
                     ghwlb = ghwlb
         else:
-            ghwlb = hierarchyghw[-1] + 1 
+            # (q^r - 1) d_{r-1} <= (q^r - q) d_r (Helleseth, Klove, Levenshtein and Ytrehus),
+            # since each coordinate in the support of an r-dimensional subcode is outside the
+            # support of exactly one of its hyperplanes. This bound is at least d_{r-1} + 1
+            ghwlb = ceil((q**r - 1) * hierarchyghw[-1] / (q**r - q))
         ghwub = nsupp - k + r # Singleton bound for C punctured on its support
         w = r
         while w <= k and ghwlb < ghwub: 
