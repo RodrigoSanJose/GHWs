@@ -307,6 +307,8 @@ def matrix_supp(M):
         {0, 1, 2}
     
     """
+    if isinstance(M, (list, tuple)): # A list of vectors
+        M = matrix(M)
     sup = set()
     for i in range(M.nrows()): # Faster than computing the supports of the rows as vectors
         sup.update(M.nonzero_positions_in_row(i))
