@@ -27,6 +27,7 @@
 
 # Required imports
 # Standard library
+from contextlib import closing
 from itertools import combinations, islice
 from multiprocessing import get_context
 import operator
@@ -411,17 +412,17 @@ def binary_rank(R, S, y):
             basis[x.bit_length() - 1] = x
     return len(basis)
 
-# With ncpus > 1, the steps of the search with fewer candidates than this run serially, since
-# starting the worker processes takes about 10-25 ms. Over GF(2), where a candidate is about 20
-# times cheaper, the threshold is 20 times larger
+# With ncpus > 1, the steps with fewer candidates than this run serially, since starting the
+# worker processes takes about 10-25 ms. Over GF(2), where a candidate is about 20 times
+# cheaper, the threshold is 20 times larger
 PARALLEL_MIN_CANDIDATES = 20000
-worker_step = None # The data of the current step of the search, in each worker process
+worker_step = None # The data of the current step, in each worker process
 
 def start_worker(step):
     r"""
-    This is an auxiliary function for search_step, which runs in each worker process when it
-    starts. It stores the data of the current step of the search, and it makes the worker
-    ignore Ctrl-C (the parent process handles it and stops the workers).
+    This is an auxiliary function for parallel_batches, which runs in each worker process when
+    it starts. It stores the data of the current step, and it makes the worker ignore Ctrl-C
+    (the parent process handles it and stops the workers).
     """
     global worker_step
     worker_step = step
@@ -429,15 +430,45 @@ def start_worker(step):
 
 def scan_batch(batch):
     r"""
-    This is an auxiliary function for search_step, which runs in the worker processes. It
-    applies scan_step to the supports of the step in the positions first to last - 1, and to
-    the reduced row echelon forms in the positions rfirst to rlast - 1, where batch is
-    (first, last, rfirst, rlast).
+    This is an auxiliary function for parallel_batches, which runs in the worker processes.
+    The current step is worker_step = (scan, k, w, rrefs, args), and batch is (first, last,
+    rfirst, rlast). It applies scan to the supports of size w of range(k) in the positions
+    first to last - 1 and to the reduced row echelon forms in the positions rfirst to
+    rlast - 1, with the remaining arguments args.
     """
-    k, w, rrefs, gens, binary, ub, stop = worker_step
+    scan, k, w, rrefs, args = worker_step
     first, last, rfirst, rlast = batch
-    return scan_step(islice(combinations(range(k), w), first, last), rrefs[rfirst:rlast], gens,
-                     binary, ub, stop)
+    return scan(islice(combinations(range(k), w), first, last), rrefs[rfirst:rlast], *args)
+
+def parallel_batches(scan, k, w, rrefs, args, ncpus):
+    r"""
+    This is an auxiliary function for search_step and spectrum_step. It divides the step with
+    supports of size w into ncpus batches of consecutive supports (or of consecutive reduced
+    row echelon forms, if there are more of them), and it yields the results of scan on the
+    batches (see scan_batch) as they finish. The batches run in a pool of ncpus processes
+    created with fork, which is stopped when this generator is closed.
+    """
+    nsupports = binomial(k, w)
+    R = len(rrefs)
+    if nsupports >= R:
+        batches = [(nsupports * i // ncpus, nsupports * (i + 1) // ncpus, 0, R)
+                   for i in range(ncpus)]
+    else:
+        batches = [(0, nsupports, R * i // ncpus, R * (i + 1) // ncpus) for i in range(ncpus)]
+    pool = None
+    # Ctrl-C is held back while the workers start, so that they are always stopped afterwards
+    mask = signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
+    try:
+        # The workers are forked, so they get the data of the step without copying it
+        pool = get_context('fork').Pool(ncpus, start_worker, ((scan, k, w, rrefs, args),))
+        signal.pthread_sigmask(signal.SIG_SETMASK, mask)
+        for value in pool.imap_unordered(scan_batch, batches):
+            yield value
+    finally:
+        signal.pthread_sigmask(signal.SIG_SETMASK, mask)
+        if pool is not None:
+            pool.terminate()
+            pool.join()
 
 def scan_step(supports, rrefs, gens, binary, ub, stop, verbose=False):
     r"""
@@ -481,16 +512,62 @@ def scan_step(supports, rrefs, gens, binary, ub, stop, verbose=False):
                         return ub
     return ub
 
-def search_step(k, w, rrefs, gens, binary, ub, stop, verbose=False, ncpus=1):
+def rscan_step(supports, rrefs, gens, binary, H2, ub, stop, verbose=False):
     r"""
-    This is an auxiliary function for GHW, hierarchy and GHW_bound. It computes one step of
-    the search, for the subspaces whose supports in the message coordinates have size w:
-    it returns scan_step for all the supports of size w of range(k), that is, the minimum
-    of ub and the cardinalities of the supports of these subspaces (or the first one that
-    is at most stop). With ncpus > 1, if the step has enough candidates (see
-    PARALLEL_MIN_CANDIDATES), it is divided into ncpus batches that run in parallel, in
-    processes created with fork. The result is the same, but with verbose=True only the
-    improvements seen as the batches finish are printed.
+    This is an auxiliary function for RGHW, rhierarchy and RGHW_bound. It is scan_step for
+    the subspaces that intersect C2 trivially, where H2 is a parity check matrix of C2. Over
+    GF(2), each element of gens is the pair of the rows of a generator matrix j and of the
+    rows of j * H2^T, as integers (see binary_rank).
+
+    OUTPUT:
+
+    The minimum of ub and these cardinalities (or the first one that is at most stop).
+
+    EXAMPLES::
+
+        sage: G = matrix(GF(3), [[1, 0, 1, 1], [0, 1, 1, 2]])
+        sage: H2 = LinearCode(G[:1]).parity_check_matrix()
+        sage: rscan_step([(0,), (1,)], subspaces(1, 1, 1, GF(3)), [G], False, H2, 4, 0)
+        3
+    
+    """
+    for y in supports: # All possible supports of weight w
+        # The matrix with the columns of mat in the positions of y (and zero elsewhere),
+        # times j, is equal to mat times the rows of j in the positions of y
+        if binary:
+            gen_rows = gens
+        else:
+            gen_rows = [j.matrix_from_rows(y) for j in gens]
+        for mat in rrefs:
+            for j in gen_rows:
+                if binary:
+                    supptemp = binary_supp(mat, j[0], y)
+                else:
+                    Mtempj = mat * j
+                    supptemp = len(matrix_supp(Mtempj))
+                if supptemp < ub:
+                    if binary:
+                        interd = len(mat) - binary_rank(mat, j[1], y)
+                    else:
+                        interd = Mtempj.nrows() - (H2 * Mtempj.transpose()).rank()
+                    if interd == 0: # The subspace intersects C2 trivially
+                        if verbose:
+                            print('Subspace with cardinality of support', supptemp, 'found')
+                        ub = supptemp
+                        if ub <= stop:
+                            return ub
+    return ub
+
+def search_step(k, w, rrefs, gens, binary, ub, stop, verbose=False, ncpus=1, H2=None):
+    r"""
+    This is an auxiliary function for GHW, hierarchy and GHW_bound (and, with H2, for RGHW,
+    rhierarchy and RGHW_bound). It computes one step of the search, for the subspaces whose
+    supports in the message coordinates have size w: it returns scan_step (or rscan_step)
+    for all the supports of size w of range(k), that is, the minimum of ub and the
+    cardinalities of the supports of these subspaces (or the first one that is at most stop).
+    With ncpus > 1, if the step has enough candidates (see PARALLEL_MIN_CANDIDATES), it is
+    divided into ncpus batches that run in parallel (see parallel_batches). The result is the
+    same, but with verbose=True only the improvements seen as the batches finish are printed.
 
     OUTPUT:
 
@@ -503,38 +580,136 @@ def search_step(k, w, rrefs, gens, binary, ub, stop, verbose=False, ncpus=1):
         3
     
     """
-    nsupports = binomial(k, w)
-    R = len(rrefs)
-    if ncpus == 1 or nsupports * R * len(gens) < PARALLEL_MIN_CANDIDATES * (20 if binary else 1):
-        return scan_step(combinations(range(k), w), rrefs, gens, binary, ub, stop, verbose)
-    # Each batch takes consecutive supports, or consecutive reduced row echelon forms if there
-    # are more of them (for instance, when w is close to k)
-    if nsupports >= R:
-        batches = [(nsupports * i // ncpus, nsupports * (i + 1) // ncpus, 0, R)
-                   for i in range(ncpus)]
+    if H2 is None:
+        scan, args = scan_step, (gens, binary, ub, stop)
     else:
-        batches = [(0, nsupports, R * i // ncpus, R * (i + 1) // ncpus) for i in range(ncpus)]
-    pool = None
-    # Ctrl-C is held back while the workers start, so that they are always stopped afterwards
-    mask = signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
-    try:
-        # The workers are forked, so they get the data of the step without copying it
-        step = (k, w, rrefs, gens, binary, ub, stop)
-        pool = get_context('fork').Pool(ncpus, start_worker, (step,))
-        signal.pthread_sigmask(signal.SIG_SETMASK, mask)
-        for value in pool.imap_unordered(scan_batch, batches):
+        scan, args = rscan_step, (gens, binary, H2, ub, stop)
+    candidates = binomial(k, w) * len(rrefs) * len(gens)
+    if ncpus == 1 or candidates < PARALLEL_MIN_CANDIDATES * (20 if binary else 1):
+        return scan(combinations(range(k), w), rrefs, *args, verbose)
+    with closing(parallel_batches(scan, k, w, rrefs, args, ncpus)) as results:
+        for value in results:
             if value < ub:
                 ub = value
                 if verbose:
                     print('Subspace with cardinality of support', ub, 'found')
                 if ub <= stop: # The other batches are not needed
                     break
-    finally:
-        signal.pthread_sigmask(signal.SIG_SETMASK, mask)
-        if pool is not None:
-            pool.terminate()
-            pool.join()
     return ub
+
+def count_step(supports, rrefs, G, binary, subspace_list=False):
+    r"""
+    This is an auxiliary function for higher_spectrum. For every support y in supports and
+    every reduced row echelon form mat in rrefs, it computes the cardinality of the support of
+    the subspace given by mat times the rows of G in the positions of y. Over GF(2)
+    (binary=True), G is given by its rows as integers, and each matrix of rrefs by the
+    positions of the ones in its rows (see binary_supp).
+
+    OUTPUT:
+
+    A dictionary with the number of these subspaces for each cardinality of the support, and
+    a dictionary with the lists of these subspaces (empty if subspace_list=False).
+
+    EXAMPLES::
+
+        sage: G = matrix(GF(3), [[1, 0, 1, 1], [0, 1, 1, 2]])
+        sage: count_step([(0,), (1,)], subspaces(1, 1, 1, GF(3)), G, False)
+        ({3: 2}, {})
+    
+    """
+    counts = {}
+    lists = {}
+    for y in supports: # All possible supports of weight w
+        # The matrix with the columns of mat in the positions of y (and zero elsewhere),
+        # times G, is equal to mat times the rows of G in the positions of y
+        if not binary:
+            G_rows = G.matrix_from_rows(y)
+        for mat in rrefs:
+            if binary:
+                supptemp = binary_supp(mat, G, y)
+            else:
+                Mtemp = mat * G_rows
+                supptemp = len(matrix_supp(Mtemp))
+            counts[supptemp] = counts.get(supptemp, 0) + 1
+            if subspace_list:
+                lists.setdefault(supptemp, []).append(Mtemp)
+    return counts, lists
+
+def rcount_step(supports, rrefs, G, binary, H2, subspace_list=False):
+    r"""
+    This is an auxiliary function for rhigher_spectrum. It is count_step for the subspaces
+    that intersect C2 trivially, where H2 is a parity check matrix of C2. Over GF(2), G is
+    given by the pair of the rows of G and of the rows of G * H2^T, as integers (see
+    binary_rank).
+
+    OUTPUT:
+
+    A dictionary with the number of these subspaces for each cardinality of the support, and
+    a dictionary with the lists of these subspaces (empty if subspace_list=False).
+
+    EXAMPLES::
+
+        sage: G = matrix(GF(3), [[1, 0, 1, 1], [0, 1, 1, 2]])
+        sage: H2 = LinearCode(G[:1]).parity_check_matrix()
+        sage: rcount_step([(0,), (1,)], subspaces(1, 1, 1, GF(3)), G, False, H2)
+        ({3: 1}, {})
+    
+    """
+    counts = {}
+    lists = {}
+    for y in supports: # All possible supports of weight w
+        # The matrix with the columns of mat in the positions of y (and zero elsewhere),
+        # times G, is equal to mat times the rows of G in the positions of y
+        if not binary:
+            G_rows = G.matrix_from_rows(y)
+        for mat in rrefs:
+            if binary:
+                if binary_rank(mat, G[1], y) < len(mat): # The subspace intersects C2
+                    continue
+                supptemp = binary_supp(mat, G[0], y)
+            else:
+                Mtemp = mat * G_rows
+                if (H2 * Mtemp.transpose()).rank() < Mtemp.nrows(): # It intersects C2
+                    continue
+                supptemp = len(matrix_supp(Mtemp))
+            counts[supptemp] = counts.get(supptemp, 0) + 1
+            if subspace_list:
+                lists.setdefault(supptemp, []).append(Mtemp)
+    return counts, lists
+
+def spectrum_step(k, w, rrefs, G, binary, subspace_list=False, ncpus=1, H2=None):
+    r"""
+    This is an auxiliary function for higher_spectrum (and, with H2, for rhigher_spectrum).
+    It returns count_step (or rcount_step) for all the supports of size w of range(k). With
+    ncpus > 1 and subspace_list=False, if the step has enough candidates (see
+    PARALLEL_MIN_CANDIDATES), it is divided into ncpus batches that run in parallel (see
+    parallel_batches), and their counts are added.
+
+    OUTPUT:
+
+    A dictionary with the number of these subspaces for each cardinality of the support, and
+    a dictionary with the lists of these subspaces (empty if subspace_list=False).
+
+    EXAMPLES::
+
+        sage: G = matrix(GF(3), [[1, 0, 1, 1], [0, 1, 1, 2]])
+        sage: spectrum_step(2, 1, subspaces(1, 1, 1, GF(3)), G, False)
+        ({3: 2}, {})
+    
+    """
+    if H2 is None:
+        count, args = count_step, (G, binary, subspace_list)
+    else:
+        count, args = rcount_step, (G, binary, H2, subspace_list)
+    candidates = binomial(k, w) * len(rrefs)
+    if ncpus == 1 or subspace_list or candidates < PARALLEL_MIN_CANDIDATES * (20 if binary else 1):
+        return count(combinations(range(k), w), rrefs, *args)
+    counts = {}
+    with closing(parallel_batches(count, k, w, rrefs, args, ncpus)) as results:
+        for batch_counts, batch_lists in results:
+            for key in batch_counts:
+                counts[key] = counts.get(key, 0) + batch_counts[key]
+    return counts, {}
 
 def subspaces(r, w, n, K):
     r"""
@@ -930,7 +1105,7 @@ def hierarchy(C, L=None, verbose=False, strategy='auto', ncpus=1):
             print('Current hierarchy:', hierarchyghw)
     return hierarchyghw
 
-def RGHW(C, C2, r, L=None, verbose=False):
+def RGHW(C, C2, r, L=None, verbose=False, ncpus=1):
     r"""
     Computes the rth RGHW of the code C with respect to the code C2. 
     The optional argument L is a list of the form [inf_sets, gen_mats, redundancy], 
@@ -941,6 +1116,11 @@ def RGHW(C, C2, r, L=None, verbose=False):
     generator matrix G of C (unless the code is cyclic, in which case we use 
     additional improvements). If we set verbose=True, real time information is 
     provided during the execution of the algorithm (see the example).
+
+    The optional argument ncpus (1 by default) is the number of processes used by the
+    search: with ncpus > 1, its large steps run in parallel, in processes created with fork
+    (tested on Linux and WSL; Python considers fork unsafe on macOS). The result is the same,
+    but with verbose=True fewer of the subspaces found may be printed.
 
     OUTPUT:
 
@@ -962,6 +1142,9 @@ def RGHW(C, C2, r, L=None, verbose=False):
         4
     
     """
+    ncpus = operator.index(ncpus) # The number of processes for the search
+    if ncpus < 1:
+        raise Exception('ncpus has to be a positive integer')
     K = C.base_field()
     k = C.dimension()
     n = C.length()
@@ -1030,40 +1213,10 @@ def RGHW(C, C2, r, L=None, verbose=False):
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm] 
         if binary: # Over GF(2), their rows (and those of j * H2^T) as integers
             gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
-        terminate = False
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
             rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
-        for y in combinations(range(k), w): # All possible supports of weight w
-            # The matrix with the columns of mat in the positions of y (and zero elsewhere),
-            # times j, is equal to mat times the rows of j in the positions of y
-            if binary:
-                gen_rows = gen_reduced
-            else:
-                gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
-            for mat in rrefs:
-                for j in gen_rows:
-                    if binary: # j contains the rows of j and of j * H2^T as integers
-                        supptemp = binary_supp(mat, j[0], y)
-                    else:
-                        Mtempj = mat * j
-                        supptemp = len(matrix_supp(Mtempj))
-                    if supptemp < ghwub:
-                        if binary:
-                            interd = r - binary_rank(mat, j[1], y)
-                        else:
-                            interd = r - (H2 * Mtempj.transpose()).rank()
-                        if interd == 0:
-                            if verbose:
-                                print('Subspace with cardinality of support', supptemp, 'found')
-                            ghwub = supptemp
-                            if ghwub <= ghwlb:
-                                terminate = True
-                                break
-                if terminate:
-                    break
-            if terminate:
-                break
+        ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, ghwlb, verbose, ncpus, H2)
         # Lower bound calculations     
         ghwlbtemp = 0
         for j in range(len(gen_reduced)):
@@ -1075,7 +1228,7 @@ def RGHW(C, C2, r, L=None, verbose=False):
         w = w + 1
     return ghwub
 
-def rhierarchy(C, C2, L=None, verbose=False):  
+def rhierarchy(C, C2, L=None, verbose=False, ncpus=1):
     r"""
     Computes the relative weight hierarchy of the code C with respect to the code C2. 
     The optional argument L is a list of the form [inf_sets, gen_mats, redundancy], 
@@ -1086,6 +1239,11 @@ def rhierarchy(C, C2, L=None, verbose=False):
     generator matrix G of C (unless the code is cyclic, in which case we use 
     additional improvements). If we set verbose=True, real time information is 
     provided during the execution of the algorithm (see the example).
+
+    The optional argument ncpus (1 by default) is the number of processes used by the
+    search: with ncpus > 1, its large steps run in parallel, in processes created with fork
+    (tested on Linux and WSL; Python considers fork unsafe on macOS). The result is the same,
+    but with verbose=True fewer of the subspaces found may be printed.
 
     OUTPUT:
 
@@ -1109,6 +1267,9 @@ def rhierarchy(C, C2, L=None, verbose=False):
         [3, 5]
     
     """
+    ncpus = operator.index(ncpus) # The number of processes for the search
+    if ncpus < 1:
+        raise Exception('ncpus has to be a positive integer')
     K = C.base_field()
     q = K.cardinality()
     k = C.dimension()
@@ -1186,40 +1347,10 @@ def rhierarchy(C, C2, L=None, verbose=False):
             gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm] 
             if binary: # Over GF(2), their rows (and those of j * H2^T) as integers
                 gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
-            terminate = False
             rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
             if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
                 rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
-            for y in combinations(range(k), w): # All possible supports of weight w
-                # The matrix with the columns of mat in the positions of y (and zero elsewhere),
-                # times j, is equal to mat times the rows of j in the positions of y
-                if binary:
-                    gen_rows = gen_reduced
-                else:
-                    gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
-                for mat in rrefs:
-                    for j in gen_rows:
-                        if binary: # j contains the rows of j and of j * H2^T as integers
-                            supptemp = binary_supp(mat, j[0], y)
-                        else:
-                            Mtempj = mat * j
-                            supptemp = len(matrix_supp(Mtempj))
-                        if supptemp < ghwub:
-                            if binary:
-                                interd = r - binary_rank(mat, j[1], y)
-                            else:
-                                interd = r - (H2 * Mtempj.transpose()).rank()
-                            if interd == 0:
-                                if verbose:
-                                    print('Subspace with cardinality of support', supptemp, 'found')
-                                ghwub = supptemp
-                                if ghwub <= ghwlb:
-                                    terminate = True
-                                    break
-                    if terminate:
-                        break
-                if terminate:
-                    break
+            ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, ghwlb, verbose, ncpus, H2)
             # Lower bound calculations        
             ghwlbtemp = 0
             for j in range(len(gen_reduced)):
@@ -1234,7 +1365,7 @@ def rhierarchy(C, C2, L=None, verbose=False):
             print('Current hierarchy:', hierarchyrghw)
     return hierarchyrghw
 
-def higher_spectrum(C, verbose=False, subspace_list=False, R=None): 
+def higher_spectrum(C, verbose=False, subspace_list=False, R=None, ncpus=1):
     r"""
     Computes the higher weight spectrum of the code C. If we set verbose=True, 
     real time information is provided during the execution of the algorithm
@@ -1247,6 +1378,11 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
     subspaces D in C with dim(D)=r, \|supp(D)\|=w.
     The optional parameter R allows the user to only compute the higher weight 
     spectrum for r in R. If none is given, we compute it for 1 <= r <= dim(C). 
+
+    The optional argument ncpus (1 by default) is the number of processes used: with
+    ncpus > 1 and subspace_list=False, the large steps of the computation run in parallel, in
+    processes created with fork (tested on Linux and WSL; Python considers fork unsafe on
+    macOS). The result is the same.
 
     OUTPUT:
 
@@ -1293,6 +1429,9 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
         ]}}]
     
     """
+    ncpus = operator.index(ncpus) # The number of processes for the search
+    if ncpus < 1:
+        raise Exception('ncpus has to be a positive integer')
     K = C.base_field()
     k = C.dimension()
     n = C.length()
@@ -1327,20 +1466,12 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
             rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
             if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
                 rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
-            for y in combinations(range(k), w): # All possible supports of weight w
-                # The matrix with the columns of mat in the positions of y (and zero elsewhere),
-                # times G, is equal to mat times the rows of G in the positions of y
-                if not binary:
-                    G_rows = G.matrix_from_rows(y)
-                for mat in rrefs:
-                    if binary:
-                        supptemp = binary_supp(mat, G_bits, y)
-                    else:
-                        Mtemp = mat * G_rows
-                        supptemp = len(matrix_supp(Mtemp))
-                    spectemp[supptemp] = spectemp.get(supptemp, 0) + 1
-                    if subspace_list:
-                        subsptemp.setdefault(supptemp, []).append(Mtemp)
+            data = G_bits if binary else G # The rows of G (as integers over GF(2))
+            counts, lists = spectrum_step(k, w, rrefs, data, binary, subspace_list, ncpus)
+            for key in counts:
+                spectemp[key] = spectemp.get(key, 0) + counts[key]
+            for key in lists:
+                subsptemp.setdefault(key, []).extend(lists[key])
             if verbose:
                 # Order by key
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])}
@@ -1357,7 +1488,7 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
     else:
         return spec
     
-def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None): 
+def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None, ncpus=1):
     r"""
     Computes the relative higher weight spectrum of the code C. If we set 
     verbose=True, real time information is provided during the execution of 
@@ -1372,6 +1503,11 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
     The optional parameter R allows the user to only compute the relative higher weight 
     spectrum for r in R. If none is given, we compute it for 1 <= r <= dim(C)-dim(C2). 
     
+    The optional argument ncpus (1 by default) is the number of processes used: with
+    ncpus > 1 and subspace_list=False, the large steps of the computation run in parallel, in
+    processes created with fork (tested on Linux and WSL; Python considers fork unsafe on
+    macOS). The result is the same.
+
     OUTPUT:
 
     If subspace_list=False, a dictionary 'spec', whose keys are given by r, and
@@ -1410,6 +1546,9 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
         ]}}]
 
     """
+    ncpus = operator.index(ncpus) # The number of processes for the search
+    if ncpus < 1:
+        raise Exception('ncpus has to be a positive integer')
     K = C.base_field()
     k = C.dimension()
     n = C.length()
@@ -1459,25 +1598,12 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
             rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
             if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
                 rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
-            for y in combinations(range(k), w): # All possible supports of weight w
-                # The matrix with the columns of mat in the positions of y (and zero elsewhere),
-                # times G, is equal to mat times the rows of G in the positions of y
-                if not binary:
-                    G_rows = G.matrix_from_rows(y)
-                for mat in rrefs:
-                    if binary:
-                        interd = r - binary_rank(mat, G_syn, y)
-                    else:
-                        Mtemp = mat * G_rows
-                        interd = r - (H2 * Mtemp.transpose()).rank()
-                    if interd == 0:
-                        if binary:
-                            supptemp = binary_supp(mat, G_bits, y)
-                        else:
-                            supptemp = len(matrix_supp(Mtemp))
-                        spectemp[supptemp] = spectemp.get(supptemp, 0) + 1
-                        if subspace_list:
-                            subsptemp.setdefault(supptemp, []).append(Mtemp)
+            data = [G_bits, G_syn] if binary else G # Over GF(2), as integers
+            counts, lists = spectrum_step(k, w, rrefs, data, binary, subspace_list, ncpus, H2)
+            for key in counts:
+                spectemp[key] = spectemp.get(key, 0) + counts[key]
+            for key in lists:
+                subsptemp.setdefault(key, []).extend(lists[key])
             if verbose:
                 # Order by key
                 spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])}

@@ -218,6 +218,14 @@ if not (GHW(C, 2, ncpus=2) == 12
         and GHW_bound(C, 2, 12, ncpus=2) and not GHW_bound(C, 2, 12.5, ncpus=2)
         and not GHW_bound(C, 2, 11.5, 'upper', ncpus=3)):
     raise Exception("Error with the parallel search")
+G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
+C1, C2 = LinearCode(G), LinearCode(G[2:])
+D = codes.GeneralizedReedSolomonCode(GF(7).list(), 4)
+if not (rhierarchy(C1, C2, ncpus=2) == [3, 5] and RGHW(C1, C2, 2, ncpus=3) == 5
+        and RGHW_bound(C1, C2, 2, 5, ncpus=2) and not RGHW_bound(C1, C2, 2, 4, 'upper', ncpus=2)
+        and rhigher_spectrum(C1, C2, ncpus=2) == {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
+        and higher_spectrum(D, ncpus=3) == higher_spectrum(D)):
+    raise Exception("Error with the parallel relative search or spectra")
 GHWs.core.PARALLEL_MIN_CANDIDATES = 20000
 for ncpus in [0, 2.5]:
     try:

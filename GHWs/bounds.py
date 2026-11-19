@@ -178,7 +178,7 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False, ncpus=1):
     return ghwub <= bound
 
 
-def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
+def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False, ncpus=1):
     r"""
     Checks whether bound is a valid lower or upper bound for the rth RGHW of C
     with respect to C2. The argument bound_type must be either 'lower' or
@@ -190,7 +190,7 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
     cardinality of support at most bound and trivial intersection with C2 is
     found, and returns False as soon as the lower bound for the subspaces that
     have not yet been enumerated is greater than bound. The optional arguments
-    L and verbose follow the same conventions as in RGHW.
+    L, verbose and ncpus follow the same conventions as in RGHW.
 
     OUTPUT:
 
@@ -216,6 +216,9 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
         False
 
     """
+    ncpus = operator.index(ncpus) # The number of processes for the search
+    if ncpus < 1:
+        raise Exception('ncpus has to be a positive integer')
     K = C.base_field()
     k = C.dimension()
     n = C.length()
@@ -315,33 +318,13 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
             rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
-        for y in combinations(range(k), w): # All possible supports of weight w
-            # The matrix with the columns of mat in the positions of y (and zero elsewhere),
-            # times j, is equal to mat times the rows of j in the positions of y
-            if binary:
-                gen_rows = gen_reduced
-            else:
-                gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
-            for mat in rrefs:
-                for j in gen_rows:
-                    if binary: # j contains the rows of j and of j * H2^T as integers
-                        supptemp = binary_supp(mat, j[0], y)
-                    else:
-                        Mtempj = mat * j
-                        supptemp = len(matrix_supp(Mtempj))
-                    if supptemp < ghwub:
-                        if binary:
-                            interd = r - binary_rank(mat, j[1], y)
-                        else:
-                            interd = r - (H2 * Mtempj.transpose()).rank()
-                        if interd == 0:
-                            if verbose:
-                                print('Subspace with cardinality of support', supptemp, 'found')
-                            ghwub = supptemp
-                            if bound_type == 'lower' and ghwub < bound:
-                                return False
-                            elif bound_type == 'upper' and ghwub <= bound:
-                                return True
+        # The answer is known as soon as ghwub <= stop
+        stop = ceil(bound) - 1 if bound_type == 'lower' else bound
+        ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, stop, verbose, ncpus, H2)
+        if bound_type == 'lower' and ghwub < bound:
+            return False
+        elif bound_type == 'upper' and ghwub <= bound:
+            return True
         # Lower bound for the subspaces that have not yet been enumerated
         ghwlbtemp = 0
         for j in range(len(gen_reduced)):
