@@ -15,13 +15,11 @@ import operator
 # Sage imports
 from sage.arith.srange import srange
 from sage.functions.other import ceil
-from sage.categories.sets_cat import cartesian_product
-from sage.matrix.constructor import matrix
 
 # GHWs imports
 from .core import (
-    bch_bound, binary_rank, binary_rows, binary_supp, colwt, information, is_cyclic, matrix_supp,
-    search_step, standard, subspaces
+    bch_bound, binary_rank, binary_rows, binary_subspaces, binary_supp, information, is_cyclic,
+    matrix_supp, search_step, subspaces, subspaces_iter
 )
 
 
@@ -150,9 +148,10 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False, ncpus=1):
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
         if binary: # Over GF(2), their rows as integers (see binary_supp)
             gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
-        rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
-            rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
+            rrefs = list(binary_subspaces(r, w))
+        else: # All reduced row echelon forms in the first w columns
+            rrefs = subspaces(r, w, w, K)
         # The answer is known as soon as ghwub <= stop
         stop = ceil(bound) - 1 if bound_type == 'lower' else bound
         ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, stop, verbose, ncpus)
@@ -317,9 +316,10 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False, ncpus
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
         if binary: # Over GF(2), their rows (and those of j * H2^T) as integers
             gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
-        rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
-            rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
+            rrefs = list(binary_subspaces(r, w))
+        else: # All reduced row echelon forms in the first w columns
+            rrefs = subspaces(r, w, w, K)
         # The answer is known as soon as ghwub <= stop
         stop = ceil(bound) - 1 if bound_type == 'lower' else bound
         ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, stop, verbose, ncpus, H2)
@@ -468,53 +468,29 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
         if binary: # Over GF(2), their rows as integers (see binary_supp)
             gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
-        standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
-        y = range(w) # We start with support {1,...,w}
-        for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
-            # position, and we choose r - 1 more pivots
-            comp = [z for z in y if z not in s and z!=y[0]] # Non pivots
-            ss = [y[0]] + list(s) # Pivots
-            weights_columns = []
-            for i in comp:
-                j = 1
-                while i - j not in ss:
-                    j = j + 1
-                ind = ss.index(i - j)
-                weights_columns.append(ind + 1) # The columns can have
-                # different weights depending on their position relative
-                # to the pivots
-            # The list of all possible non-pivot columns:
-            fqcols = cartesian_product([colwt(j, r, K) for j in weights_columns])
-            for i in fqcols:
-                # The r x w matrix with pivots in ss and non-pivot columns i, which is the
-                # same for every sup
-                MM = []
-                for z in range(w):
-                    if z in ss: # Pivots
-                        MM.append(standards[ss.index(z)])
-                    else: # Non pivots
-                        MM.append(i[comp.index(z)])
-                mat = matrix(K, MM).transpose()
-                if binary: # The positions of the ones in each row (see binary_supp)
-                    mat = [mat.nonzero_positions_in_row(t) for t in range(r)]
-                for sup in combinations(range(k), w): # All possible supports of weight w
-                    # The matrix with the columns of mat in the positions of sup (and zero
-                    # elsewhere), times j, is equal to mat times the rows of j in the
-                    # positions of sup (all of j if w = k, so then j is not copied)
-                    for j in gen_reduced:
-                        if binary:
-                            supptemp = binary_supp(mat, j, sup)
-                        else:
-                            rows = j if w == k else j.matrix_from_rows(sup)
-                            supptemp = len(matrix_supp(mat * rows))
-                        if supptemp < ghwub:
-                            ghwub = supptemp
-                            if verbose:
-                                print('Subspace with cardinality of support', supptemp, 'found')
-                            if bound_type == 'lower' and ghwub < bound:
-                                return False
-                            elif bound_type == 'upper' and ghwub <= bound:
-                                return True
+        if binary: # The positions of the ones in each row (see binary_supp)
+            rrefs = binary_subspaces(r, w) # One at a time
+        else: # The reduced row echelon forms in the first w columns, one at a time
+            rrefs = subspaces_iter(r, w, K)
+        for mat in rrefs:
+            for sup in combinations(range(k), w): # All possible supports of weight w
+                # The matrix with the columns of mat in the positions of sup (and zero
+                # elsewhere), times j, is equal to mat times the rows of j in the
+                # positions of sup (all of j if w = k, so then j is not copied)
+                for j in gen_reduced:
+                    if binary:
+                        supptemp = binary_supp(mat, j, sup)
+                    else:
+                        rows = j if w == k else j.matrix_from_rows(sup)
+                        supptemp = len(matrix_supp(mat * rows))
+                    if supptemp < ghwub:
+                        ghwub = supptemp
+                        if verbose:
+                            print('Subspace with cardinality of support', supptemp, 'found')
+                        if bound_type == 'lower' and ghwub < bound:
+                            return False
+                        elif bound_type == 'upper' and ghwub <= bound:
+                            return True
         # Lower bound for the subspaces that have not yet been enumerated
         ghwlbtemp = 0
         for j in range(len(gen_reduced)):
@@ -671,59 +647,35 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
         if binary: # Over GF(2), their rows (and those of j * H2^T) as integers
             gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
-        standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
-        y = range(w) # We start with support {1,...,w}
-        for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
-            # position, and we choose r - 1 more pivots
-            comp = [z for z in y if z not in s and z!=y[0]] # Non pivots
-            ss = [y[0]] + list(s) # Pivots
-            weights_columns = []
-            for i in comp:
-                j = 1
-                while i - j not in ss:
-                    j = j + 1
-                ind = ss.index(i - j)
-                weights_columns.append(ind + 1) # The columns can have
-                # different weights depending on their position relative
-                # to the pivots
-            # The list of all possible non-pivot columns:
-            fqcols = cartesian_product([colwt(j, r, K) for j in weights_columns])
-            for i in fqcols:
-                # The r x w matrix with pivots in ss and non-pivot columns i, which is the
-                # same for every sup
-                MM = []
-                for z in range(w):
-                    if z in ss: # Pivots
-                        MM.append(standards[ss.index(z)])
-                    else: # Non pivots
-                        MM.append(i[comp.index(z)])
-                mat = matrix(K, MM).transpose()
-                if binary: # The positions of the ones in each row (see binary_supp)
-                    mat = [mat.nonzero_positions_in_row(t) for t in range(r)]
-                for sup in combinations(range(k), w): # All possible supports of weight w
-                    # The matrix with the columns of mat in the positions of sup (and zero
-                    # elsewhere), times j, is equal to mat times the rows of j in the
-                    # positions of sup (all of j if w = k, so then j is not copied)
-                    for j in gen_reduced:
-                        if binary: # j contains the rows of j and of j * H2^T as integers
-                            supptemp = binary_supp(mat, j[0], sup)
+        if binary: # The positions of the ones in each row (see binary_supp)
+            rrefs = binary_subspaces(r, w) # One at a time
+        else: # The reduced row echelon forms in the first w columns, one at a time
+            rrefs = subspaces_iter(r, w, K)
+        for mat in rrefs:
+            for sup in combinations(range(k), w): # All possible supports of weight w
+                # The matrix with the columns of mat in the positions of sup (and zero
+                # elsewhere), times j, is equal to mat times the rows of j in the
+                # positions of sup (all of j if w = k, so then j is not copied)
+                for j in gen_reduced:
+                    if binary: # j contains the rows of j and of j * H2^T as integers
+                        supptemp = binary_supp(mat, j[0], sup)
+                    else:
+                        rows = j if w == k else j.matrix_from_rows(sup)
+                        Mtempj = mat * rows
+                        supptemp = len(matrix_supp(Mtempj))
+                    if supptemp < ghwub:
+                        if binary:
+                            interd = r - binary_rank(mat, j[1], sup)
                         else:
-                            rows = j if w == k else j.matrix_from_rows(sup)
-                            Mtempj = mat * rows
-                            supptemp = len(matrix_supp(Mtempj))
-                        if supptemp < ghwub:
-                            if binary:
-                                interd = r - binary_rank(mat, j[1], sup)
-                            else:
-                                interd = r - (H2 * Mtempj.transpose()).rank()
-                            if interd == 0:
-                                if verbose:
-                                    print('Subspace with cardinality of support', supptemp, 'found')
-                                ghwub = supptemp
-                                if bound_type == 'lower' and ghwub < bound:
-                                    return False
-                                elif bound_type == 'upper' and ghwub <= bound:
-                                    return True
+                            interd = r - (H2 * Mtempj.transpose()).rank()
+                        if interd == 0:
+                            if verbose:
+                                print('Subspace with cardinality of support', supptemp, 'found')
+                            ghwub = supptemp
+                            if bound_type == 'lower' and ghwub < bound:
+                                return False
+                            elif bound_type == 'upper' and ghwub <= bound:
+                                return True
         # Lower bound for the subspaces that have not yet been enumerated
         ghwlbtemp = 0
         for j in range(len(gen_reduced)):
