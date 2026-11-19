@@ -66,8 +66,10 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
         raise Exception('Invalid value of r')
     if bound_type not in ['lower', 'upper']:
         raise Exception("bound_type has to be either 'lower' or 'upper'")
-    # The rth GHW is always between r and the generalized Singleton bound
-    ghwmax = n - k + r
+    nsupp = len(matrix_supp(G)) # Cardinality of the support of C
+    # The rth GHW is always between r and the generalized Singleton bound (for C punctured on
+    # its support)
+    ghwmax = nsupp - k + r
     if bound_type == 'lower':
         if bound <= r:
             return True
@@ -411,8 +413,10 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
         raise Exception('Invalid value of r')
     if bound_type not in ['lower', 'upper']:
         raise Exception("bound_type has to be either 'lower' or 'upper'")
-    # The rth GHW is always between r and the generalized Singleton bound
-    ghwmax = n - k + r
+    nsupp = len(matrix_supp(G)) # Cardinality of the support of C
+    # The rth GHW is always between r and the generalized Singleton bound (for C punctured on
+    # its support)
+    ghwmax = nsupp - k + r
     if bound_type == 'lower':
         if bound <= r:
             return True
