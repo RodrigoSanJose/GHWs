@@ -1149,6 +1149,7 @@ def RGHW(C, C2, r, L=None, verbose=False, ncpus=1):
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
+    nsupp = len(matrix_supp(G)) # Cardinality of the support of C
     H = C.parity_check_matrix()
     G2 = C2.systematic_generator_matrix()
     H2 = C2.parity_check_matrix()
@@ -1183,7 +1184,7 @@ def RGHW(C, C2, r, L=None, verbose=False, ncpus=1):
             ghwlb = max(ghwlb, bch_bound(C)) 
         except:
             ghwlb = ghwlb
-    ghwub = n - k + r
+    ghwub = nsupp - k + r # Singleton bound for C punctured on its support
     w = r
     while w <= k and ghwlb < ghwub: 
         # Computation of w0, the expected w to finish
@@ -1275,6 +1276,7 @@ def rhierarchy(C, C2, L=None, verbose=False, ncpus=1):
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
+    nsupp = len(matrix_supp(G)) # Cardinality of the support of C
     H = C.parity_check_matrix()
     G2 = C2.systematic_generator_matrix()
     H2 = C2.parity_check_matrix()
@@ -1317,7 +1319,7 @@ def rhierarchy(C, C2, L=None, verbose=False, ncpus=1):
             # and Ytrehus), since the hyperplanes of a subcode that intersects C2 trivially also
             # intersect C2 trivially. This bound is at least M_{r-1} + 1
             ghwlb = ceil((q**r - 1) * hierarchyrghw[-1] / (q**r - q))
-        ghwub = n - k + r
+        ghwub = nsupp - k + r # Singleton bound for C punctured on its support
         w = r
         while w <= k and ghwlb < ghwub: 
             # Computation of w0, the expected w to finish
@@ -2036,6 +2038,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
+    nsupp = len(matrix_supp(G)) # Cardinality of the support of C
     H = C.parity_check_matrix()
     G2 = C2.systematic_generator_matrix()
     H2 = C2.parity_check_matrix()
@@ -2070,7 +2073,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
             ghwlb = max(ghwlb, bch_bound(C)) 
         except:
             ghwlb = ghwlb
-    ghwub = n - k + r
+    ghwub = nsupp - k + r # Singleton bound for C punctured on its support
     w = r
     while w <= k and ghwlb < ghwub: 
         # Computation of w0, the expected w to finish
@@ -2212,6 +2215,7 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
     k = C.dimension()
     n = C.length()
     G = C.systematic_generator_matrix()
+    nsupp = len(matrix_supp(G)) # Cardinality of the support of C
     H = C.parity_check_matrix()
     G2 = C2.systematic_generator_matrix()
     H2 = C2.parity_check_matrix()
@@ -2254,7 +2258,7 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
             # and Ytrehus), since the hyperplanes of a subcode that intersects C2 trivially also
             # intersect C2 trivially. This bound is at least M_{r-1} + 1
             ghwlb = ceil((q**r - 1) * hierarchyrghw[-1] / (q**r - q))
-        ghwub = n - k + r
+        ghwub = nsupp - k + r # Singleton bound for C punctured on its support
         w = r
         while w <= k and ghwlb < ghwub: 
             # Computation of w0, the expected w to finish
