@@ -30,6 +30,7 @@
 from contextlib import closing
 from itertools import combinations, islice
 from multiprocessing import get_context
+from multiprocessing.connection import wait
 import operator
 import signal
 from copy import copy
@@ -416,37 +417,32 @@ def binary_rank(R, S, y):
 # worker processes takes about 10-25 ms. Over GF(2), where a candidate is about 20 times
 # cheaper, the threshold is 20 times larger
 PARALLEL_MIN_CANDIDATES = 20000
-worker_step = None # The data of the current step, in each worker process
 
-def start_worker(step):
+def run_batch(writer, scan, k, w, rrefs, args, batch):
     r"""
-    This is an auxiliary function for parallel_batches, which runs in each worker process when
-    it starts. It stores the data of the current step, and it makes the worker ignore Ctrl-C
-    (the parent process handles it and stops the workers).
+    This is an auxiliary function for parallel_batches, which runs in a worker process. Here
+    batch is (first, last, rfirst, rlast). It applies scan to the supports of size w of
+    range(k) in the positions first to last - 1 and to the reduced row echelon forms in the
+    positions rfirst to rlast - 1, with the remaining arguments args, and it sends the result
+    through writer (or the exception raised, if any). The worker ignores Ctrl-C (the parent
+    process handles it and stops the workers).
     """
-    global worker_step
-    worker_step = step
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-def scan_batch(batch):
-    r"""
-    This is an auxiliary function for parallel_batches, which runs in the worker processes.
-    The current step is worker_step = (scan, k, w, rrefs, args), and batch is (first, last,
-    rfirst, rlast). It applies scan to the supports of size w of range(k) in the positions
-    first to last - 1 and to the reduced row echelon forms in the positions rfirst to
-    rlast - 1, with the remaining arguments args.
-    """
-    scan, k, w, rrefs, args = worker_step
     first, last, rfirst, rlast = batch
-    return scan(islice(combinations(range(k), w), first, last), rrefs[rfirst:rlast], *args)
+    try:
+        value = scan(islice(combinations(range(k), w), first, last), rrefs[rfirst:rlast], *args)
+        writer.send((True, value))
+    except Exception as e:
+        writer.send((False, e))
+    writer.close()
 
 def parallel_batches(scan, k, w, rrefs, args, ncpus):
     r"""
     This is an auxiliary function for search_step and spectrum_step. It divides the step with
     supports of size w into ncpus batches of consecutive supports (or of consecutive reduced
     row echelon forms, if there are more of them), and it yields the results of scan on the
-    batches (see scan_batch) as they finish. The batches run in a pool of ncpus processes
-    created with fork, which is stopped when this generator is closed.
+    batches (see run_batch) as they finish. Each batch runs in its own process, created with
+    fork, and the processes that are still running are stopped when this generator is closed.
     """
     nsupports = binomial(k, w)
     R = len(rrefs)
@@ -455,20 +451,37 @@ def parallel_batches(scan, k, w, rrefs, args, ncpus):
                    for i in range(ncpus)]
     else:
         batches = [(0, nsupports, R * i // ncpus, R * (i + 1) // ncpus) for i in range(ncpus)]
-    pool = None
+    context = get_context('fork')
+    workers = [] # The processes, with the ends of their pipes where the parent reads
     # Ctrl-C is held back while the workers start, so that they are always stopped afterwards
     mask = signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
     try:
-        # The workers are forked, so they get the data of the step without copying it
-        pool = get_context('fork').Pool(ncpus, start_worker, ((scan, k, w, rrefs, args),))
+        for batch in batches:
+            reader, writer = context.Pipe(duplex=False)
+            # The workers are forked, so they get the data of the step without copying it
+            p = context.Process(target=run_batch, args=(writer, scan, k, w, rrefs, args, batch))
+            p.start()
+            workers.append((p, reader))
+            writer.close() # Only the worker writes in its pipe
         signal.pthread_sigmask(signal.SIG_SETMASK, mask)
-        for value in pool.imap_unordered(scan_batch, batches):
-            yield value
+        pending = [reader for p, reader in workers]
+        while pending:
+            for reader in wait(pending): # The pipes with a result
+                pending.remove(reader)
+                try:
+                    finished, value = reader.recv()
+                except EOFError:
+                    raise Exception('A worker process ended without sending its result')
+                if not finished: # The exception raised in the worker
+                    raise value
+                yield value
     finally:
         signal.pthread_sigmask(signal.SIG_SETMASK, mask)
-        if pool is not None:
-            pool.terminate()
-            pool.join()
+        for p, reader in workers:
+            if p.is_alive():
+                p.terminate()
+            p.join()
+            reader.close()
 
 def scan_step(supports, rrefs, gens, binary, ub, stop, verbose=False):
     r"""
