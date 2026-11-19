@@ -234,8 +234,8 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
     k2 = C2.dimension()
     if r not in range(1, k - k2 + 1):
         raise Exception('Invalid value of r')
-    if C2.base_field() != K:
-        raise Exception('C and C2 have to be defined over the same field')
+    if not K.has_coerce_map_from(C2.base_field()): # C2 can be defined over a subfield of K
+        raise Exception('C2 has to be defined over the field of C (or a subfield of it)')
     if not H * G2.transpose() == 0:
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():
@@ -603,8 +603,8 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
     k2 = C2.dimension()
     if r not in range(1, k - k2 + 1):
         raise Exception('Invalid value of r')
-    if C2.base_field() != K:
-        raise Exception('C and C2 have to be defined over the same field')
+    if not K.has_coerce_map_from(C2.base_field()): # C2 can be defined over a subfield of K
+        raise Exception('C2 has to be defined over the field of C (or a subfield of it)')
     if not H * G2.transpose() == 0:
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():

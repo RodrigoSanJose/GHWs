@@ -870,8 +870,8 @@ def RGHW(C, C2, r, L=None, verbose=False):
     k2 = C2.dimension()
     if r not in range(1, k - k2 + 1):
         raise Exception('Invalid value of r')
-    if C2.base_field() != K:
-        raise Exception('C and C2 have to be defined over the same field')
+    if not K.has_coerce_map_from(C2.base_field()): # C2 can be defined over a subfield of K
+        raise Exception('C2 has to be defined over the field of C (or a subfield of it)')
     if not H * G2.transpose() == 0:
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():
@@ -1016,8 +1016,8 @@ def rhierarchy(C, C2, L=None, verbose=False):
     G2 = C2.systematic_generator_matrix()
     H2 = C2.parity_check_matrix()
     k2 = C2.dimension()
-    if C2.base_field() != K:
-        raise Exception('C and C2 have to be defined over the same field')
+    if not K.has_coerce_map_from(C2.base_field()): # C2 can be defined over a subfield of K
+        raise Exception('C2 has to be defined over the field of C (or a subfield of it)')
     if not H * G2.transpose() == 0:
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():
@@ -1315,8 +1315,8 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
     G2 = C2.systematic_generator_matrix()
     H2 = C2.parity_check_matrix()
     k2 = C2.dimension()
-    if C2.base_field() != K:
-        raise Exception('C and C2 have to be defined over the same field')
+    if not K.has_coerce_map_from(C2.base_field()): # C2 can be defined over a subfield of K
+        raise Exception('C2 has to be defined over the field of C (or a subfield of it)')
     if not H * G2.transpose() == 0:
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():
@@ -1808,8 +1808,8 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
     k2 = C2.dimension()
     if r not in range(1, k - k2 + 1):
         raise Exception('Invalid value of r')
-    if C2.base_field() != K:
-        raise Exception('C and C2 have to be defined over the same field')
+    if not K.has_coerce_map_from(C2.base_field()): # C2 can be defined over a subfield of K
+        raise Exception('C2 has to be defined over the field of C (or a subfield of it)')
     if not H * G2.transpose() == 0:
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():
@@ -1981,8 +1981,8 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
     G2 = C2.systematic_generator_matrix()
     H2 = C2.parity_check_matrix()
     k2 = C2.dimension()
-    if C2.base_field() != K:
-        raise Exception('C and C2 have to be defined over the same field')
+    if not K.has_coerce_map_from(C2.base_field()): # C2 can be defined over a subfield of K
+        raise Exception('C2 has to be defined over the field of C (or a subfield of it)')
     if not H * G2.transpose() == 0:
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():
@@ -2333,8 +2333,8 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
     G2 = C2.systematic_generator_matrix()
     H2 = C2.parity_check_matrix()
     k2 = C2.dimension()
-    if C2.base_field() != K:
-        raise Exception('C and C2 have to be defined over the same field')
+    if not K.has_coerce_map_from(C2.base_field()): # C2 can be defined over a subfield of K
+        raise Exception('C2 has to be defined over the field of C (or a subfield of it)')
     if not H * G2.transpose() == 0:
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():

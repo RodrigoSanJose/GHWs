@@ -189,7 +189,7 @@ for searches, args, kwargs, expected in (
         if search(*args, L=L, **kwargs) != expected:
             raise Exception("Error with generator matrices over ZZ in " + search.__name__)
 
-# We test that C2 has to be defined over the same field as C
+# We test that C2 has to be defined over the field of C (or a subfield of it)
 C = LinearCode(identity_matrix(K, 3))
 F = GF(4, 'a')
 C2 = LinearCode(matrix(F, [[1, F.gen(), F.gen()]]))
@@ -200,10 +200,13 @@ for search, args in ((RGHW, (C, C2, 1)), (RGHW_low_mem, (C, C2, 1)), (rhierarchy
     try:
         search(*args)
     except Exception as error:
-        if str(error) != 'C and C2 have to be defined over the same field':
+        if str(error) != 'C2 has to be defined over the field of C (or a subfield of it)':
             raise
     else:
         raise Exception(search.__name__ + " accepted C2 over a different field")
+C = LinearCode(matrix(F, [[1, 0, 0, 1, 1, 0], [0, 1, 0, 1, 0, 1], [0, 0, 1, 0, 1, 1]]))
+if not rhierarchy(C, LinearCode(matrix(K, [[1, 0, 0, 1, 1, 0]]))) == [3, 5]: # C2 over a subfield
+    raise Exception("Error with rhierarchy for C2 over a subfield")
 
 end = time.time()
 print('Total time:', end - start)
