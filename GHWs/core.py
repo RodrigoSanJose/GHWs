@@ -408,6 +408,69 @@ def binary_rank(R, S, y):
             basis[x.bit_length() - 1] = x
     return len(basis)
 
+def scan_step(supports, rrefs, gens, binary, ub, stop, verbose=False):
+    r"""
+    This is an auxiliary function for GHW, hierarchy and GHW_bound. For every support y in
+    supports (subsets of size w of the message coordinates), every reduced row echelon form
+    mat in rrefs (r x w) and every generator matrix j in gens, it computes the cardinality
+    of the support of the row space of mat times the rows of j in the positions of y. It
+    returns the minimum of ub and these cardinalities, as soon as this minimum is at most
+    stop. Over GF(2) (binary=True), each matrix of rrefs is given by the positions of the
+    ones in its rows, and each matrix of gens by its rows as integers (see binary_supp).
+
+    OUTPUT:
+
+    The minimum of ub and these cardinalities (or the first one that is at most stop).
+
+    EXAMPLES::
+
+        sage: G = matrix(GF(3), [[1, 0, 1, 1], [0, 1, 1, 2]])
+        sage: scan_step([(0, 1)], subspaces(1, 2, 2, GF(3)), [G], False, 4, 0)
+        3
+    
+    """
+    for y in supports: # All possible supports of weight w
+        # The matrix with the columns of mat in the positions of y (and zero elsewhere),
+        # times j, is equal to mat times the rows of j in the positions of y
+        if binary:
+            gen_rows = gens
+        else:
+            gen_rows = [j.matrix_from_rows(y) for j in gens]
+        for mat in rrefs:
+            for j in gen_rows:
+                if binary:
+                    supptemp = binary_supp(mat, j, y)
+                else:
+                    supptemp = len(matrix_supp(mat * j))
+                if supptemp < ub:
+                    ub = supptemp
+                    if verbose:
+                        print('Subspace with cardinality of support', supptemp, 'found')
+                    if ub <= stop:
+                        return ub
+    return ub
+
+def search_step(k, w, rrefs, gens, binary, ub, stop, verbose=False):
+    r"""
+    This is an auxiliary function for GHW, hierarchy and GHW_bound. It computes one step of
+    the search, for the subspaces whose supports in the message coordinates have size w:
+    it returns scan_step for all the supports of size w of range(k), that is, the minimum
+    of ub and the cardinalities of the supports of these subspaces (or the first one that
+    is at most stop).
+
+    OUTPUT:
+
+    The minimum of ub and these cardinalities (or the first one that is at most stop).
+
+    EXAMPLES::
+
+        sage: G = matrix(GF(3), [[1, 0, 1, 1], [0, 1, 1, 2]])
+        sage: search_step(2, 1, subspaces(1, 1, 1, GF(3)), [G], False, 4, 0)
+        3
+    
+    """
+    return scan_step(combinations(range(k), w), rrefs, gens, binary, ub, stop, verbose)
+
 def subspaces(r, w, n, K):
     r"""
     Computes all the subspaces E contained in K^n with dim(E)=r and \|supp(E)\|=w.
@@ -604,34 +667,10 @@ def GHW(C, r, L=None, verbose=False):
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm] 
         if binary: # Over GF(2), their rows as integers (see binary_supp)
             gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
-        terminate = False
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
             rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
-        for y in combinations(range(k), w): # All possible supports of weight w
-            # The matrix with the columns of mat in the positions of y (and zero elsewhere),
-            # times j, is equal to mat times the rows of j in the positions of y
-            if binary:
-                gen_rows = gen_reduced
-            else:
-                gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
-            for mat in rrefs:
-                for j in gen_rows:
-                    if binary:
-                        supptemp = binary_supp(mat, j, y)
-                    else:
-                        supptemp = len(matrix_supp(mat * j))
-                    if supptemp < ghwub:
-                        ghwub = supptemp
-                        if verbose:
-                            print('Subspace with cardinality of support', supptemp, 'found')
-                        if ghwub <= ghwlb:
-                            terminate = True
-                            break
-                if terminate:
-                    break
-            if terminate:
-                break
+        ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, ghwlb, verbose)
         # Lower bound calculations     
         ghwlbtemp = 0
         for j in range(len(gen_reduced)):
@@ -792,34 +831,10 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
             gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm] 
             if binary: # Over GF(2), their rows as integers (see binary_supp)
                 gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
-            terminate = False
             rrefs = subspaces(r, w, w, K)  # All reduced row echelon forms in the first w columns
             if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
                 rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
-            for y in combinations(range(k), w): # All possible supports of weight w
-                # The matrix with the columns of mat in the positions of y (and zero elsewhere),
-                # times j, is equal to mat times the rows of j in the positions of y
-                if binary:
-                    gen_rows = gen_reduced
-                else:
-                    gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
-                for mat in rrefs:
-                    for j in gen_rows:
-                        if binary:
-                            supptemp = binary_supp(mat, j, y)
-                        else:
-                            supptemp = len(matrix_supp(mat * j))
-                        if supptemp < ghwub:
-                            ghwub = supptemp
-                            if verbose:
-                                print('Subspace with cardinality of support', supptemp, 'found')
-                            if ghwub <= ghwlb:
-                                terminate = True
-                                break                    
-                    if terminate:
-                        break
-                if terminate:
-                    break
+            ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, ghwlb, verbose)
             # Lower bound calculations        
             ghwlbtemp = 0
             for j in range(len(gen_reduced)):

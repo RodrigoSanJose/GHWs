@@ -20,7 +20,7 @@ from sage.matrix.constructor import matrix
 # GHWs imports
 from .core import (
     bch_bound, binary_rank, binary_rows, binary_supp, colwt, information, is_cyclic, matrix_supp,
-    standard, subspaces
+    search_step, standard, subspaces
 )
 
 
@@ -149,27 +149,13 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
             rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
-        for y in combinations(range(k), w): # All possible supports of weight w
-            # The matrix with the columns of mat in the positions of y (and zero elsewhere),
-            # times j, is equal to mat times the rows of j in the positions of y
-            if binary:
-                gen_rows = gen_reduced
-            else:
-                gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
-            for mat in rrefs:
-                for j in gen_rows:
-                    if binary:
-                        supptemp = binary_supp(mat, j, y)
-                    else:
-                        supptemp = len(matrix_supp(mat * j))
-                    if supptemp < ghwub:
-                        ghwub = supptemp
-                        if verbose:
-                            print('Subspace with cardinality of support', supptemp, 'found')
-                        if bound_type == 'lower' and ghwub < bound:
-                            return False
-                        elif bound_type == 'upper' and ghwub <= bound:
-                            return True
+        # The answer is known as soon as ghwub <= stop
+        stop = ceil(bound) - 1 if bound_type == 'lower' else bound
+        ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, stop, verbose)
+        if bound_type == 'lower' and ghwub < bound:
+            return False
+        elif bound_type == 'upper' and ghwub <= bound:
+            return True
         # Lower bound for the subspaces that have not yet been enumerated
         ghwlbtemp = 0
         for j in range(len(gen_reduced)):
