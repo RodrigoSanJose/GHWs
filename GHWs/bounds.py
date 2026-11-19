@@ -10,6 +10,7 @@
 # Required imports
 # Standard library
 from itertools import combinations
+import operator
 
 # Sage imports
 from sage.arith.srange import srange
@@ -24,7 +25,7 @@ from .core import (
 )
 
 
-def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
+def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False, ncpus=1):
     r"""
     Checks whether bound is a valid lower or upper bound for the rth GHW of C.
     The argument bound_type must be either 'lower' or 'upper'. If
@@ -34,7 +35,7 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
     reaches bound. If bound_type='upper', the algorithm returns True as soon as
     a subcode with cardinality of support at most bound is found, and returns
     False as soon as the lower bound for the subspaces that have not yet been
-    enumerated is greater than bound. The optional arguments L and verbose
+    enumerated is greater than bound. The optional arguments L, verbose and ncpus
     follow the same conventions as in GHW.
 
     OUTPUT:
@@ -58,6 +59,9 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
         False
 
     """
+    ncpus = operator.index(ncpus) # The number of processes for the search
+    if ncpus < 1:
+        raise Exception('ncpus has to be a positive integer')
     K = C.base_field()
     k = C.dimension()
     n = C.length()
@@ -151,7 +155,7 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
             rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
         # The answer is known as soon as ghwub <= stop
         stop = ceil(bound) - 1 if bound_type == 'lower' else bound
-        ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, stop, verbose)
+        ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, stop, verbose, ncpus)
         if bound_type == 'lower' and ghwub < bound:
             return False
         elif bound_type == 'upper' and ghwub <= bound:

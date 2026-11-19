@@ -208,5 +208,23 @@ C = LinearCode(matrix(F, [[1, 0, 0, 1, 1, 0], [0, 1, 0, 1, 0, 1], [0, 0, 1, 0, 1
 if not rhierarchy(C, LinearCode(matrix(K, [[1, 0, 0, 1, 1, 0]]))) == [3, 5]: # C2 over a subfield
     raise Exception("Error with rhierarchy for C2 over a subfield")
 
+# We test the parallel search (with every step in parallel) and the argument ncpus
+import GHWs.core
+GHWs.core.PARALLEL_MIN_CANDIDATES = 0
+C = codes.BinaryReedMullerCode(1, 4)
+if not (GHW(C, 2, ncpus=2) == 12
+        and hierarchy(C, strategy='direct', ncpus=3) == [8, 12, 14, 15, 16]
+        and hierarchy(codes.GolayCode(GF(3)), ncpus=2) == [6, 8, 9, 10, 11, 12]
+        and GHW_bound(C, 2, 12, ncpus=2) and not GHW_bound(C, 2, 12.5, ncpus=2)
+        and not GHW_bound(C, 2, 11.5, 'upper', ncpus=3)):
+    raise Exception("Error with the parallel search")
+GHWs.core.PARALLEL_MIN_CANDIDATES = 20000
+for ncpus in [0, 2.5]:
+    try:
+        GHW(C, 1, ncpus=ncpus)
+    except Exception:
+        continue
+    raise Exception("GHW accepted ncpus = " + str(ncpus))
+
 end = time.time()
 print('Total time:', end - start)

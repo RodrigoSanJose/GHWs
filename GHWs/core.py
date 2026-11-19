@@ -27,7 +27,10 @@
 
 # Required imports
 # Standard library
-from itertools import combinations
+from itertools import combinations, islice
+from multiprocessing import get_context
+import operator
+import signal
 from copy import copy
 
 #Sage imports
@@ -408,6 +411,34 @@ def binary_rank(R, S, y):
             basis[x.bit_length() - 1] = x
     return len(basis)
 
+# With ncpus > 1, the steps of the search with fewer candidates than this run serially, since
+# starting the worker processes takes about 10-25 ms. Over GF(2), where a candidate is about 20
+# times cheaper, the threshold is 20 times larger
+PARALLEL_MIN_CANDIDATES = 20000
+worker_step = None # The data of the current step of the search, in each worker process
+
+def start_worker(step):
+    r"""
+    This is an auxiliary function for search_step, which runs in each worker process when it
+    starts. It stores the data of the current step of the search, and it makes the worker
+    ignore Ctrl-C (the parent process handles it and stops the workers).
+    """
+    global worker_step
+    worker_step = step
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+def scan_batch(batch):
+    r"""
+    This is an auxiliary function for search_step, which runs in the worker processes. It
+    applies scan_step to the supports of the step in the positions first to last - 1, and to
+    the reduced row echelon forms in the positions rfirst to rlast - 1, where batch is
+    (first, last, rfirst, rlast).
+    """
+    k, w, rrefs, gens, binary, ub, stop = worker_step
+    first, last, rfirst, rlast = batch
+    return scan_step(islice(combinations(range(k), w), first, last), rrefs[rfirst:rlast], gens,
+                     binary, ub, stop)
+
 def scan_step(supports, rrefs, gens, binary, ub, stop, verbose=False):
     r"""
     This is an auxiliary function for GHW, hierarchy and GHW_bound. For every support y in
@@ -450,13 +481,16 @@ def scan_step(supports, rrefs, gens, binary, ub, stop, verbose=False):
                         return ub
     return ub
 
-def search_step(k, w, rrefs, gens, binary, ub, stop, verbose=False):
+def search_step(k, w, rrefs, gens, binary, ub, stop, verbose=False, ncpus=1):
     r"""
     This is an auxiliary function for GHW, hierarchy and GHW_bound. It computes one step of
     the search, for the subspaces whose supports in the message coordinates have size w:
     it returns scan_step for all the supports of size w of range(k), that is, the minimum
     of ub and the cardinalities of the supports of these subspaces (or the first one that
-    is at most stop).
+    is at most stop). With ncpus > 1, if the step has enough candidates (see
+    PARALLEL_MIN_CANDIDATES), it is divided into ncpus batches that run in parallel, in
+    processes created with fork. The result is the same, but with verbose=True only the
+    improvements seen as the batches finish are printed.
 
     OUTPUT:
 
@@ -469,7 +503,38 @@ def search_step(k, w, rrefs, gens, binary, ub, stop, verbose=False):
         3
     
     """
-    return scan_step(combinations(range(k), w), rrefs, gens, binary, ub, stop, verbose)
+    nsupports = binomial(k, w)
+    R = len(rrefs)
+    if ncpus == 1 or nsupports * R * len(gens) < PARALLEL_MIN_CANDIDATES * (20 if binary else 1):
+        return scan_step(combinations(range(k), w), rrefs, gens, binary, ub, stop, verbose)
+    # Each batch takes consecutive supports, or consecutive reduced row echelon forms if there
+    # are more of them (for instance, when w is close to k)
+    if nsupports >= R:
+        batches = [(nsupports * i // ncpus, nsupports * (i + 1) // ncpus, 0, R)
+                   for i in range(ncpus)]
+    else:
+        batches = [(0, nsupports, R * i // ncpus, R * (i + 1) // ncpus) for i in range(ncpus)]
+    pool = None
+    # Ctrl-C is held back while the workers start, so that they are always stopped afterwards
+    mask = signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
+    try:
+        # The workers are forked, so they get the data of the step without copying it
+        step = (k, w, rrefs, gens, binary, ub, stop)
+        pool = get_context('fork').Pool(ncpus, start_worker, (step,))
+        signal.pthread_sigmask(signal.SIG_SETMASK, mask)
+        for value in pool.imap_unordered(scan_batch, batches):
+            if value < ub:
+                ub = value
+                if verbose:
+                    print('Subspace with cardinality of support', ub, 'found')
+                if ub <= stop: # The other batches are not needed
+                    break
+    finally:
+        signal.pthread_sigmask(signal.SIG_SETMASK, mask)
+        if pool is not None:
+            pool.terminate()
+            pool.join()
+    return ub
 
 def subspaces(r, w, n, K):
     r"""
@@ -575,7 +640,7 @@ def wei_duality(L, n=None):
         n = L[-1]
     return [i for i in range(1, n + 1) if n - i + 1 not in L]
     
-def GHW(C, r, L=None, verbose=False):  
+def GHW(C, r, L=None, verbose=False, ncpus=1):
     r"""
     Computes the rth GHW of the code C. The optional argument L is a list
     of the form [inf_sets, gen_mats, redundancy], where inf_sets is a list
@@ -590,6 +655,11 @@ def GHW(C, r, L=None, verbose=False):
     code, which usually requires computing several of them. If 2k > n and
     several GHWs are needed, it is usually faster to compute the whole weight
     hierarchy (see the argument strategy of hierarchy).
+
+    The optional argument ncpus (1 by default) is the number of processes used by the
+    search: with ncpus > 1, its large steps run in parallel, in processes created with fork
+    (tested on Linux and WSL; Python considers fork unsafe on macOS). The result is the same,
+    but with verbose=True fewer of the subspaces found may be printed.
 
     OUTPUT:
 
@@ -608,6 +678,9 @@ def GHW(C, r, L=None, verbose=False):
         24
     
     """
+    ncpus = operator.index(ncpus) # The number of processes for the search
+    if ncpus < 1:
+        raise Exception('ncpus has to be a positive integer')
     K = C.base_field()
     k = C.dimension()
     n = C.length()
@@ -670,7 +743,7 @@ def GHW(C, r, L=None, verbose=False):
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
         if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
             rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
-        ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, ghwlb, verbose)
+        ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, ghwlb, verbose, ncpus)
         # Lower bound calculations     
         ghwlbtemp = 0
         for j in range(len(gen_reduced)):
@@ -682,7 +755,7 @@ def GHW(C, r, L=None, verbose=False):
         w = w + 1
     return ghwub
 
-def hierarchy(C, L=None, verbose=False, strategy='auto'): 
+def hierarchy(C, L=None, verbose=False, strategy='auto', ncpus=1):
     r"""
     Computes the weight hierarchy of C. The optional argument L is a list
     of the form [inf_sets, gen_mats, redundancy], where inf_sets is a list
@@ -705,6 +778,11 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
     is usually faster, although not always. The argument L cannot be used with
     strategy='dual', since it refers to C and not to its dual. With the dual
     strategy, the bounds printed by verbose=True refer to the dual code.
+
+    The optional argument ncpus (1 by default) is the number of processes used by the
+    search: with ncpus > 1, its large steps run in parallel, in processes created with fork
+    (tested on Linux and WSL; Python considers fork unsafe on macOS). The result is the same,
+    but with verbose=True fewer of the subspaces found may be printed.
 
     OUTPUT:
 
@@ -742,6 +820,9 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
         [4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]
 
     """
+    ncpus = operator.index(ncpus) # The number of processes for the search
+    if ncpus < 1:
+        raise Exception('ncpus has to be a positive integer')
     if strategy not in ['auto', 'direct', 'dual']:
         raise Exception("strategy has to be 'auto', 'direct' or 'dual'")
     if strategy == 'dual' and L is not None:
@@ -764,7 +845,7 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
         else:
             Cp = LinearCode(G.matrix_from_columns(supp))
             hierarchyghw = wei_duality(hierarchy(Cp.dual_code(), verbose=verbose,
-                                                 strategy='direct'), nsupp)
+                                                 strategy='direct', ncpus=ncpus), nsupp)
         if verbose:
             print('Hierarchy of C (by Wei duality):', hierarchyghw)
         return hierarchyghw
@@ -834,7 +915,7 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
             rrefs = subspaces(r, w, w, K)  # All reduced row echelon forms in the first w columns
             if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
                 rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
-            ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, ghwlb, verbose)
+            ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, ghwlb, verbose, ncpus)
             # Lower bound calculations        
             ghwlbtemp = 0
             for j in range(len(gen_reduced)):
