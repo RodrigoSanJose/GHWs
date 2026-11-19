@@ -433,6 +433,8 @@ def subspaces(r, w, n, K):
     
     """
     L = []
+    standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
+    zero = vector(K, [0 for zz in range(r)])
     for y in combinations(range(n), w):
         S = combinations(y[1:], r - 1) # We assume we have a pivot on the first
         # position, and we choose r - 1 more pivots
@@ -455,11 +457,11 @@ def subspaces(r, w, n, K):
                 MM = []
                 for j in range(n):
                     if j in ss: # Pivots
-                        MM.append(standard(ss.index(j), r, K))
+                        MM.append(standards[ss.index(j)])
                     elif j in comp: # Non pivots
                         MM.append(i[comp.index(j)])
                     else: # 0's outside of the support
-                        MM.append(vector(K, [0 for zz in range(r)]))
+                        MM.append(zero)
                 L.append(matrix(K, MM).transpose())
     return L
 
@@ -1491,6 +1493,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
         if binary: # Over GF(2), their rows as integers (see binary_supp)
             gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
         terminate = False
+        standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
         y = range(w) # We start with support {1,...,w}
         for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
             # position, and we choose r - 1 more pivots
@@ -1513,7 +1516,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
                 MM = []
                 for z in range(w):
                     if z in ss: # Pivots
-                        MM.append(standard(ss.index(z), r, K))
+                        MM.append(standards[ss.index(z)])
                     else: # Non pivots
                         MM.append(i[comp.index(z)])
                 mat = matrix(K, MM).transpose()
@@ -1704,6 +1707,7 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
             if binary: # Over GF(2), their rows as integers (see binary_supp)
                 gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
             terminate = False
+            standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
             y = range(w) # We start with support {1,...,w}
             for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
                 # position, and we choose r - 1 more pivots
@@ -1726,7 +1730,7 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
                     MM = []
                     for z in range(w):
                         if z in ss: # Pivots
-                            MM.append(standard(ss.index(z), r, K))
+                            MM.append(standards[ss.index(z)])
                         else: # Non pivots
                             MM.append(i[comp.index(z)])
                     mat = matrix(K, MM).transpose()
@@ -1873,6 +1877,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
         if binary: # Over GF(2), their rows (and those of j * H2^T) as integers
             gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
         terminate = False
+        standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
         y = range(w) # We start with support {1,...,w}
         for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
             # position, and we choose r - 1 more pivots
@@ -1895,7 +1900,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
                 MM = []
                 for z in range(w):
                     if z in ss: # Pivots
-                        MM.append(standard(ss.index(z), r, K))
+                        MM.append(standards[ss.index(z)])
                     else: # Non pivots
                         MM.append(i[comp.index(z)])
                 mat = matrix(K, MM).transpose()
@@ -2056,6 +2061,7 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
             if binary: # Over GF(2), their rows (and those of j * H2^T) as integers
                 gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
             terminate = False
+            standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
             y = range(w) # We start with support {1,...,w}
             for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
                 # position, and we choose r - 1 more pivots
@@ -2078,7 +2084,7 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
                     MM = []
                     for z in range(w):
                         if z in ss: # Pivots
-                            MM.append(standard(ss.index(z), r, K))
+                            MM.append(standards[ss.index(z)])
                         else: # Non pivots
                             MM.append(i[comp.index(z)])
                     mat = matrix(K, MM).transpose()
@@ -2221,6 +2227,7 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
         if subspace_list:
             subsptemp = {}
         for w in range(r, k + 1):
+            standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
             y = range(w) # We start with support {1,...,w}
             for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
                 # position, and we choose r - 1 more pivots
@@ -2243,7 +2250,7 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
                     MM = []
                     for z in range(w):
                         if z in ss: # Pivots
-                            MM.append(standard(ss.index(z), r, K))
+                            MM.append(standards[ss.index(z)])
                         else: # Non pivots
                             MM.append(i[comp.index(z)])
                     mat = matrix(K, MM).transpose()
@@ -2379,6 +2386,7 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
         if subspace_list:
             subsptemp = {}
         for w in range(r, k + 1):
+            standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
             y = range(w) # We start with support {1,...,w}
             for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
                 # position, and we choose r - 1 more pivots
@@ -2401,7 +2409,7 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
                     MM = []
                     for z in range(w):
                         if z in ss: # Pivots
-                            MM.append(standard(ss.index(z), r, K))
+                            MM.append(standards[ss.index(z)])
                         else: # Non pivots
                             MM.append(i[comp.index(z)])
                     mat = matrix(K, MM).transpose()
