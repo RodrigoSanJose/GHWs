@@ -433,6 +433,8 @@ def subspaces(r, w, n, K):
     
     """
     L = []
+    standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
+    zero = vector(K, [0 for zz in range(r)])
     for y in combinations(range(n), w):
         S = combinations(y[1:], r - 1) # We assume we have a pivot on the first
         # position, and we choose r - 1 more pivots
@@ -455,11 +457,11 @@ def subspaces(r, w, n, K):
                 MM = []
                 for j in range(n):
                     if j in ss: # Pivots
-                        MM.append(standard(ss.index(j), r, K))
+                        MM.append(standards[ss.index(j)])
                     elif j in comp: # Non pivots
                         MM.append(i[comp.index(j)])
                     else: # 0's outside of the support
-                        MM.append(vector(K, [0 for zz in range(r)]))
+                        MM.append(zero)
                 L.append(matrix(K, MM).transpose())
     return L
 
@@ -714,12 +716,14 @@ def hierarchy(C, L=None, verbose=False, strategy='auto'):
         # We compute the hierarchy of the dual of C punctured on its support,
         # which has dimension nsupp - k, and then we use Wei duality
         if verbose:
-            print('Computing the hierarchy of the dual of C punctured on its support, of dimension', nsupp - k)
+            print('Computing the hierarchy of the dual of C punctured on its support, of dimension',
+                  nsupp - k)
         if k == nsupp: # In this case, the dual is the zero code
             hierarchyghw = list(range(1, nsupp + 1))
         else:
             Cp = LinearCode(G.matrix_from_columns(supp))
-            hierarchyghw = wei_duality(hierarchy(Cp.dual_code(), verbose=verbose, strategy='direct'), nsupp)
+            hierarchyghw = wei_duality(hierarchy(Cp.dual_code(), verbose=verbose,
+                                                 strategy='direct'), nsupp)
         if verbose:
             print('Hierarchy of C (by Wei duality):', hierarchyghw)
         return hierarchyghw
@@ -1240,7 +1244,8 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None):
                     if subspace_list:
                         subsptemp.setdefault(supptemp, []).append(Mtemp)
             if verbose:
-                spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
+                # Order by key
+                spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])}
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
         spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} 
         spec.update({r: spectemp})
@@ -1289,9 +1294,9 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
         r = 0
         Spectrum: {0: 1}
         r = 1
-        Spectrum: {3: 4, 4: 1, 6: 1}                                                                                                     
+        Spectrum: {3: 4, 4: 1, 6: 1}
         r = 2
-        Spectrum: {5: 2, 6: 2}                                                                                                     
+        Spectrum: {5: 2, 6: 2}
         {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
         sage: rhigher_spectrum(C, C2, R=[1])
         {1: {3: 4, 4: 1, 6: 1}}
@@ -1376,7 +1381,8 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None):
                         if subspace_list:
                             subsptemp.setdefault(supptemp, []).append(Mtemp)
             if verbose:
-                spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
+                # Order by key
+                spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])}
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
         spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} 
         spec.update({r: spectemp})
@@ -1487,6 +1493,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
         if binary: # Over GF(2), their rows as integers (see binary_supp)
             gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
         terminate = False
+        standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
         y = range(w) # We start with support {1,...,w}
         for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
             # position, and we choose r - 1 more pivots
@@ -1509,7 +1516,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
                 MM = []
                 for z in range(w):
                     if z in ss: # Pivots
-                        MM.append(standard(ss.index(z), r, K))
+                        MM.append(standards[ss.index(z)])
                     else: # Non pivots
                         MM.append(i[comp.index(z)])
                 mat = matrix(K, MM).transpose()
@@ -1625,12 +1632,14 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
         # We compute the hierarchy of the dual of C punctured on its support,
         # which has dimension nsupp - k, and then we use Wei duality
         if verbose:
-            print('Computing the hierarchy of the dual of C punctured on its support, of dimension', nsupp - k)
+            print('Computing the hierarchy of the dual of C punctured on its support, of dimension',
+                  nsupp - k)
         if k == nsupp: # In this case, the dual is the zero code
             hierarchyghw = list(range(1, nsupp + 1))
         else:
             Cp = LinearCode(G.matrix_from_columns(supp))
-            hierarchyghw = wei_duality(hierarchy_low_mem(Cp.dual_code(), verbose=verbose, strategy='direct'), nsupp)
+            hierarchyghw = wei_duality(hierarchy_low_mem(Cp.dual_code(), verbose=verbose,
+                                                         strategy='direct'), nsupp)
         if verbose:
             print('Hierarchy of C (by Wei duality):', hierarchyghw)
         return hierarchyghw
@@ -1698,6 +1707,7 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
             if binary: # Over GF(2), their rows as integers (see binary_supp)
                 gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
             terminate = False
+            standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
             y = range(w) # We start with support {1,...,w}
             for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
                 # position, and we choose r - 1 more pivots
@@ -1720,7 +1730,7 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
                     MM = []
                     for z in range(w):
                         if z in ss: # Pivots
-                            MM.append(standard(ss.index(z), r, K))
+                            MM.append(standards[ss.index(z)])
                         else: # Non pivots
                             MM.append(i[comp.index(z)])
                     mat = matrix(K, MM).transpose()
@@ -1867,6 +1877,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
         if binary: # Over GF(2), their rows (and those of j * H2^T) as integers
             gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
         terminate = False
+        standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
         y = range(w) # We start with support {1,...,w}
         for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
             # position, and we choose r - 1 more pivots
@@ -1889,7 +1900,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
                 MM = []
                 for z in range(w):
                     if z in ss: # Pivots
-                        MM.append(standard(ss.index(z), r, K))
+                        MM.append(standards[ss.index(z)])
                     else: # Non pivots
                         MM.append(i[comp.index(z)])
                 mat = matrix(K, MM).transpose()
@@ -2050,6 +2061,7 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
             if binary: # Over GF(2), their rows (and those of j * H2^T) as integers
                 gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
             terminate = False
+            standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
             y = range(w) # We start with support {1,...,w}
             for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
                 # position, and we choose r - 1 more pivots
@@ -2072,7 +2084,7 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
                     MM = []
                     for z in range(w):
                         if z in ss: # Pivots
-                            MM.append(standard(ss.index(z), r, K))
+                            MM.append(standards[ss.index(z)])
                         else: # Non pivots
                             MM.append(i[comp.index(z)])
                     mat = matrix(K, MM).transpose()
@@ -2096,7 +2108,8 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
                                     interd = r - (H2 * Mtempj.transpose()).rank()
                                 if interd == 0:
                                     if verbose:
-                                        print('Subspace with cardinality of support', supptemp, 'found')
+                                        print('Subspace with cardinality of support', supptemp,
+                                              'found')
                                     ghwub = supptemp
                                     if ghwub <= ghwlb:
                                         terminate = True
@@ -2214,6 +2227,7 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
         if subspace_list:
             subsptemp = {}
         for w in range(r, k + 1):
+            standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
             y = range(w) # We start with support {1,...,w}
             for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
                 # position, and we choose r - 1 more pivots
@@ -2236,7 +2250,7 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
                     MM = []
                     for z in range(w):
                         if z in ss: # Pivots
-                            MM.append(standard(ss.index(z), r, K))
+                            MM.append(standards[ss.index(z)])
                         else: # Non pivots
                             MM.append(i[comp.index(z)])
                     mat = matrix(K, MM).transpose()
@@ -2256,7 +2270,8 @@ def higher_spectrum_low_mem(C, verbose=False, subspace_list=False, R=None):
                         if subspace_list:
                             subsptemp.setdefault(supptemp, []).append(Mtemp)
             if verbose:
-                spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
+                # Order by key
+                spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])}
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
         spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} 
         spec.update({r: spectemp})
@@ -2307,9 +2322,9 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
         r = 0
         Spectrum: {0: 1}
         r = 1
-        Spectrum: {3: 4, 4: 1, 6: 1}                                                                                                     
+        Spectrum: {3: 4, 4: 1, 6: 1}
         r = 2
-        Spectrum: {5: 2, 6: 2}                                                                                                     
+        Spectrum: {5: 2, 6: 2}
         {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
         sage: rhigher_spectrum_low_mem(C, C2, R=[1])
         {1: {3: 4, 4: 1, 6: 1}}
@@ -2371,6 +2386,7 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
         if subspace_list:
             subsptemp = {}
         for w in range(r, k + 1):
+            standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
             y = range(w) # We start with support {1,...,w}
             for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
                 # position, and we choose r - 1 more pivots
@@ -2393,7 +2409,7 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
                     MM = []
                     for z in range(w):
                         if z in ss: # Pivots
-                            MM.append(standard(ss.index(z), r, K))
+                            MM.append(standards[ss.index(z)])
                         else: # Non pivots
                             MM.append(i[comp.index(z)])
                     mat = matrix(K, MM).transpose()
@@ -2418,7 +2434,8 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
                             if subspace_list:
                                 subsptemp.setdefault(supptemp, []).append(Mtemp)
             if verbose:
-                spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} # Order by key
+                # Order by key
+                spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])}
                 print('Current spectrum:', spectemp, 'w =', w, end='\r') 
         spectemp = {k: v for k, v in sorted(spectemp.items(), key=lambda item: item[0])} 
         spec.update({r: spectemp})

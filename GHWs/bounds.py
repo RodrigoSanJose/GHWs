@@ -489,6 +489,7 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
         if binary: # Over GF(2), their rows as integers (see binary_supp)
             gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
+        standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
         y = range(w) # We start with support {1,...,w}
         for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
             # position, and we choose r - 1 more pivots
@@ -511,7 +512,7 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
                 MM = []
                 for z in range(w):
                     if z in ss: # Pivots
-                        MM.append(standard(ss.index(z), r, K))
+                        MM.append(standards[ss.index(z)])
                     else: # Non pivots
                         MM.append(i[comp.index(z)])
                 mat = matrix(K, MM).transpose()
@@ -689,6 +690,7 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
         if binary: # Over GF(2), their rows (and those of j * H2^T) as integers
             gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
+        standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
         y = range(w) # We start with support {1,...,w}
         for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
             # position, and we choose r - 1 more pivots
@@ -711,7 +713,7 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
                 MM = []
                 for z in range(w):
                     if z in ss: # Pivots
-                        MM.append(standard(ss.index(z), r, K))
+                        MM.append(standards[ss.index(z)])
                     else: # Non pivots
                         MM.append(i[comp.index(z)])
                 mat = matrix(K, MM).transpose()
