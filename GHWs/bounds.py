@@ -19,7 +19,8 @@ from sage.matrix.constructor import matrix
 
 # GHWs imports
 from .core import (
-    bch_bound, colwt, information, is_cyclic, matrix_supp, standard, subspaces
+    bch_bound, binary_rank, binary_rows, binary_supp, colwt, information, is_cyclic, matrix_supp,
+    standard, subspaces
 )
 
 
@@ -89,6 +90,10 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
+    # Over GF(2), the rows of the matrices in L[1] are used as integers (if they are over GF(2))
+    binary = K.order() == 2 and all(j.base_ring() == K for j in gen)
+    if binary:
+        gen_bits = [binary_rows(j) for j in gen]
     ghwlb = r
     if cyc:
         try:
@@ -137,14 +142,24 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False):
 
         # These are the only matrices that contribute
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
+        if binary: # Over GF(2), their rows as integers (see binary_supp)
+            gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
+        if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
+            rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
         for y in combinations(range(k), w): # All possible supports of weight w
             # The matrix with the columns of mat in the positions of y (and zero elsewhere),
             # times j, is equal to mat times the rows of j in the positions of y
-            gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
+            if binary:
+                gen_rows = gen_reduced
+            else:
+                gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
             for mat in rrefs:
                 for j in gen_rows:
-                    supptemp = len(matrix_supp(mat * j))
+                    if binary:
+                        supptemp = binary_supp(mat, j, y)
+                    else:
+                        supptemp = len(matrix_supp(mat * j))
                     if supptemp < ghwub:
                         ghwub = supptemp
                         if verbose:
@@ -219,6 +234,8 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
     k2 = C2.dimension()
     if r not in range(1, k - k2 + 1):
         raise Exception('Invalid value of r')
+    if not K.has_coerce_map_from(C2.base_field()): # C2 can be defined over a subfield of K
+        raise Exception('C2 has to be defined over the field of C (or a subfield of it)')
     if not H * G2.transpose() == 0:
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():
@@ -249,6 +266,10 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
+    # Over GF(2), the rows of the matrices in L[1] are used as integers (if they are over GF(2))
+    binary = K.order() == 2 and all(j.base_ring() == K for j in gen)
+    if binary: # The rows of each j in gen and of j * H2^T (for the intersection with C2)
+        gen_bits = [[binary_rows(j), binary_rows(j * H2.transpose())] for j in gen]
     ghwlb = r
     if cyc:
         try:
@@ -297,17 +318,30 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False):
 
         # These are the only matrices that contribute
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
+        if binary: # Over GF(2), their rows (and those of j * H2^T) as integers
+            gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
         rrefs = subspaces(r, w, w, K) # All reduced row echelon forms in the first w columns
+        if binary: # Over GF(2), the positions of the ones in each row (see binary_supp)
+            rrefs = [[mat.nonzero_positions_in_row(i) for i in range(r)] for mat in rrefs]
         for y in combinations(range(k), w): # All possible supports of weight w
             # The matrix with the columns of mat in the positions of y (and zero elsewhere),
             # times j, is equal to mat times the rows of j in the positions of y
-            gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
+            if binary:
+                gen_rows = gen_reduced
+            else:
+                gen_rows = [j.matrix_from_rows(y) for j in gen_reduced]
             for mat in rrefs:
                 for j in gen_rows:
-                    Mtempj = mat * j
-                    supptemp = len(matrix_supp(Mtempj))
+                    if binary: # j contains the rows of j and of j * H2^T as integers
+                        supptemp = binary_supp(mat, j[0], y)
+                    else:
+                        Mtempj = mat * j
+                        supptemp = len(matrix_supp(Mtempj))
                     if supptemp < ghwub:
-                        interd = r - (H2 * Mtempj.transpose()).rank()
+                        if binary:
+                            interd = r - binary_rank(mat, j[1], y)
+                        else:
+                            interd = r - (H2 * Mtempj.transpose()).rank()
                         if interd == 0:
                             if verbose:
                                 print('Subspace with cardinality of support', supptemp, 'found')
@@ -401,6 +435,10 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
+    # Over GF(2), the rows of the matrices in L[1] are used as integers (if they are over GF(2))
+    binary = K.order() == 2 and all(j.base_ring() == K for j in gen)
+    if binary:
+        gen_bits = [binary_rows(j) for j in gen]
     ghwlb = r
     if cyc:
         try:
@@ -449,6 +487,8 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
 
         # These are the only matrices that contribute
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
+        if binary: # Over GF(2), their rows as integers (see binary_supp)
+            gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
         y = range(w) # We start with support {1,...,w}
         for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
             # position, and we choose r - 1 more pivots
@@ -475,12 +515,18 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
                     else: # Non pivots
                         MM.append(i[comp.index(z)])
                 mat = matrix(K, MM).transpose()
+                if binary: # The positions of the ones in each row (see binary_supp)
+                    mat = [mat.nonzero_positions_in_row(t) for t in range(r)]
                 for sup in combinations(range(k), w): # All possible supports of weight w
                     # The matrix with the columns of mat in the positions of sup (and zero
                     # elsewhere), times j, is equal to mat times the rows of j in the
-                    # positions of sup
+                    # positions of sup (all of j if w = k, so then j is not copied)
                     for j in gen_reduced:
-                        supptemp = len(matrix_supp(mat * j.matrix_from_rows(sup)))
+                        if binary:
+                            supptemp = binary_supp(mat, j, sup)
+                        else:
+                            rows = j if w == k else j.matrix_from_rows(sup)
+                            supptemp = len(matrix_supp(mat * rows))
                         if supptemp < ghwub:
                             ghwub = supptemp
                             if verbose:
@@ -557,6 +603,8 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
     k2 = C2.dimension()
     if r not in range(1, k - k2 + 1):
         raise Exception('Invalid value of r')
+    if not K.has_coerce_map_from(C2.base_field()): # C2 can be defined over a subfield of K
+        raise Exception('C2 has to be defined over the field of C (or a subfield of it)')
     if not H * G2.transpose() == 0:
         raise Exception('C2 is not contained in C')
     elif C.dimension() == C2.dimension():
@@ -587,6 +635,10 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
         raise ValueError("L[1] must contain at least one generator matrix")
     if any(j.nrows() != k or j.ncols() != n for j in gen):
         raise Exception('The matrices in L[1] have to be k x n generator matrices of C')
+    # Over GF(2), the rows of the matrices in L[1] are used as integers (if they are over GF(2))
+    binary = K.order() == 2 and all(j.base_ring() == K for j in gen)
+    if binary: # The rows of each j in gen and of j * H2^T (for the intersection with C2)
+        gen_bits = [[binary_rows(j), binary_rows(j * H2.transpose())] for j in gen]
     ghwlb = r
     if cyc:
         try:
@@ -635,6 +687,8 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
 
         # These are the only matrices that contribute
         gen_reduced = [gen[j] for j in range(len(gen)) if j not in rm]
+        if binary: # Over GF(2), their rows (and those of j * H2^T) as integers
+            gen_reduced = [gen_bits[j] for j in range(len(gen)) if j not in rm]
         y = range(w) # We start with support {1,...,w}
         for s in combinations(y[1:], r - 1): # We assume we have a pivot on the first
             # position, and we choose r - 1 more pivots
@@ -661,15 +715,24 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
                     else: # Non pivots
                         MM.append(i[comp.index(z)])
                 mat = matrix(K, MM).transpose()
+                if binary: # The positions of the ones in each row (see binary_supp)
+                    mat = [mat.nonzero_positions_in_row(t) for t in range(r)]
                 for sup in combinations(range(k), w): # All possible supports of weight w
                     # The matrix with the columns of mat in the positions of sup (and zero
                     # elsewhere), times j, is equal to mat times the rows of j in the
-                    # positions of sup
+                    # positions of sup (all of j if w = k, so then j is not copied)
                     for j in gen_reduced:
-                        Mtempj = mat * j.matrix_from_rows(sup)
-                        supptemp = len(matrix_supp(Mtempj))
+                        if binary: # j contains the rows of j and of j * H2^T as integers
+                            supptemp = binary_supp(mat, j[0], sup)
+                        else:
+                            rows = j if w == k else j.matrix_from_rows(sup)
+                            Mtempj = mat * rows
+                            supptemp = len(matrix_supp(Mtempj))
                         if supptemp < ghwub:
-                            interd = r - (H2 * Mtempj.transpose()).rank()
+                            if binary:
+                                interd = r - binary_rank(mat, j[1], sup)
+                            else:
+                                interd = r - (H2 * Mtempj.transpose()).rank()
                             if interd == 0:
                                 if verbose:
                                     print('Subspace with cardinality of support', supptemp, 'found')
