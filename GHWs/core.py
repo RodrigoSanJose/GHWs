@@ -432,6 +432,8 @@ def subspaces(r, w, n, K):
         ]
     
     """
+    if 0 <= w and (r > w or w > n):
+        return []
     L = []
     standards = [standard(t, r, K) for t in range(r)] # The vectors of the pivot columns
     zero = vector(K, [0 for zz in range(r)])
