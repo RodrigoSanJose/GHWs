@@ -426,8 +426,8 @@ def run_batch(writer, lifeline, lifeline_end, scan, k, w, rrefs, args, i, ncpus,
     rrefs, with the remaining arguments args, but only to the supports (if by_supports is True)
     or to the matrices (otherwise) in the positions i, i + ncpus, i + 2 * ncpus, ... It sends
     the result through writer (or the exception raised, if any). The worker ignores Ctrl-C,
-    and it ends as soon as the parent process closes lifeline_end, its end of the pipe
-    lifeline (see end_with_parent).
+    and it ends when the parent process closes lifeline_end, its end of the pipe lifeline (see
+    end_with_parent).
     """
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     os.close(lifeline_end) # The copy of the end of the parent (so that its closing is seen)
@@ -448,7 +448,8 @@ def end_with_parent(lifeline):
     This is an auxiliary function for run_batch, which runs in a thread of each worker process.
     Nothing is written in the pipe lifeline, so reading from it returns when the parent closes
     its end, which it does when the step finishes or is stopped (and which also happens if the
-    parent ends). Then this ends the worker.
+    parent ends). Then this ends the worker, as soon as this thread can run (it needs the
+    interpreter lock, which a long call to compiled code may hold).
     """
     os.read(lifeline, 1)
     os._exit(0)
@@ -511,16 +512,19 @@ def parallel_batches(scan, k, w, rrefs, args, ncpus):
     # (which is too slow when there are many of them)
     by_supports = binomial(k, w) >= len(rrefs)
     workers = [] # The processes, with the two ends of their pipes
-    lifeline, lifeline_end = os.pipe() # Every worker ends when lifeline_end is closed
+    lifeline, lifeline_end = os.pipe() # The workers end when lifeline_end is closed
     try:
         start_workers(workers, lifeline, lifeline_end, scan, k, w, rrefs, args, ncpus,
                       by_supports)
         yield from worker_results(workers)
     finally:
-        # This comes first, and Ctrl-C cannot interrupt it before the pipe is closed, so every
-        # worker ends even if Ctrl-C interrupts what follows. The loops are in other functions,
-        # since in Python 3.13 an interrupt at the end of some loops skips the finally clauses
-        # of the function
+        # This comes first, and Ctrl-C cannot interrupt it before the pipe is closed, so the
+        # workers end even if Ctrl-C interrupts what follows (a worker whose start was
+        # interrupted may remain as a zombie, without running, until the parent ends). This
+        # assumes that no other parallel step runs at the same time in this process (for
+        # instance, in another thread), since its workers would inherit lifeline_end. The loops
+        # are in other functions, since in Python 3.13 an interrupt at the end of some loops
+        # skips the finally clauses of the function
         os.close(lifeline_end)
         os.close(lifeline)
         stop_workers(workers)
