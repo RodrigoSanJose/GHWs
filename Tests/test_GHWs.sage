@@ -208,37 +208,45 @@ C = LinearCode(matrix(F, [[1, 0, 0, 1, 1, 0], [0, 1, 0, 1, 0, 1], [0, 0, 1, 0, 1
 if not rhierarchy(C, LinearCode(matrix(K, [[1, 0, 0, 1, 1, 0]]))) == [3, 5]: # C2 over a subfield
     raise Exception("Error with rhierarchy for C2 over a subfield")
 
-# We test the parallel search (with every step in parallel) and the argument ncpus
-import GHWs.core
-GHWs.core.PARALLEL_MIN_CANDIDATES = 0
+# We test the parallel search (with every step in parallel) and the argument ncpus. The parallel
+# search uses fork, which Python considers unsafe on macOS (see the README), so on macOS it is
+# only tested if the environment variable GHWS_TEST_PARALLEL is 1
+import os
+import sys
 C = codes.BinaryReedMullerCode(1, 4)
-if not (GHW(C, 2, ncpus=2) == 12
-        and hierarchy(C, strategy='direct', ncpus=3) == [8, 12, 14, 15, 16]
-        and hierarchy(codes.GolayCode(GF(3)), ncpus=2) == [6, 8, 9, 10, 11, 12]
-        and GHW_bound(C, 2, 12, ncpus=2) and not GHW_bound(C, 2, 12.5, ncpus=2)
-        and not GHW_bound(C, 2, 11.5, 'upper', ncpus=3)):
-    raise Exception("Error with the parallel search")
-G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
-C1, C2 = LinearCode(G), LinearCode(G[2:])
-D = codes.GeneralizedReedSolomonCode(GF(7).list(), 4)
-if not (rhierarchy(C1, C2, ncpus=2) == [3, 5] and RGHW(C1, C2, 2, ncpus=3) == 5
-        and RGHW_bound(C1, C2, 2, 5, ncpus=2) and not RGHW_bound(C1, C2, 2, 4, 'upper', ncpus=2)
-        and rhigher_spectrum(C1, C2, ncpus=2) == {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1}, 2: {5: 2, 6: 2}}
-        and higher_spectrum(D, ncpus=3) == higher_spectrum(D)):
-    raise Exception("Error with the parallel relative search or spectra")
-GHWs.core.PARALLEL_MIN_CANDIDATES = 20000
-# We test a parallel step with more supports than sys.maxsize. Only the rows in Z (the 20001st
-# support, which the first worker reaches after 10000 others) avoid the last coordinate, so the
-# second worker must be stopped in the middle of its batch when the first finds 40
-from itertools import combinations, islice
-import multiprocessing
-Z = next(islice(combinations(range(80), 40), 20000, None))
-c = [int(t not in Z) for t in range(80)] # 0 exactly in the rows of Z
-G = identity_matrix(GF(2), 80).augment(matrix(GF(2), 80, 1, c))
-alarm(60) # So that a hang raises AlarmInterrupt
-if GHW(LinearCode(G), 40, ncpus=2) != 40 or multiprocessing.active_children():
-    raise Exception("Error with the parallel search with many supports")
-cancel_alarm()
+if sys.platform == 'darwin' and os.environ.get('GHWS_TEST_PARALLEL') != '1':
+    print('The parallel search was not tested (on macOS, set GHWS_TEST_PARALLEL=1 to test it)')
+else:
+    import GHWs.core
+    alarm(60) # So that a hang raises AlarmInterrupt
+    GHWs.core.PARALLEL_MIN_CANDIDATES = 0
+    if not (GHW(C, 2, ncpus=2) == 12
+            and hierarchy(C, strategy='direct', ncpus=3) == [8, 12, 14, 15, 16]
+            and hierarchy(codes.GolayCode(GF(3)), ncpus=2) == [6, 8, 9, 10, 11, 12]
+            and GHW_bound(C, 2, 12, ncpus=2) and not GHW_bound(C, 2, 12.5, ncpus=2)
+            and not GHW_bound(C, 2, 11.5, 'upper', ncpus=3)):
+        raise Exception("Error with the parallel search")
+    G = matrix(GF(2), [(1, 0, 0, 0, 1, 1), (0, 1, 0, 1, 1, 0), (0, 0, 1, 0, 1, 0)])
+    C1, C2 = LinearCode(G), LinearCode(G[2:])
+    D = codes.GeneralizedReedSolomonCode(GF(7).list(), 4)
+    if not (rhierarchy(C1, C2, ncpus=2) == [3, 5] and RGHW(C1, C2, 2, ncpus=3) == 5
+            and RGHW_bound(C1, C2, 2, 5, ncpus=2) and not RGHW_bound(C1, C2, 2, 4, 'upper', ncpus=2)
+            and rhigher_spectrum(C1, C2, ncpus=2) == {0: {0: 1}, 1: {3: 4, 4: 1, 6: 1},
+                                                      2: {5: 2, 6: 2}}
+            and higher_spectrum(D, ncpus=3) == higher_spectrum(D)):
+        raise Exception("Error with the parallel relative search or spectra")
+    GHWs.core.PARALLEL_MIN_CANDIDATES = 20000
+    # We test a parallel step with more supports than sys.maxsize. Only the rows in Z (the 20001st
+    # support, which the first worker reaches after 10000 others) avoid the last coordinate, so the
+    # second worker must be stopped in the middle of its batch when the first finds 40
+    from itertools import combinations, islice
+    import multiprocessing
+    Z = next(islice(combinations(range(80), 40), 20000, None))
+    c = [int(t not in Z) for t in range(80)] # 0 exactly in the rows of Z
+    G = identity_matrix(GF(2), 80).augment(matrix(GF(2), 80, 1, c))
+    if GHW(LinearCode(G), 40, ncpus=2) != 40 or multiprocessing.active_children():
+        raise Exception("Error with the parallel search with many supports")
+    cancel_alarm()
 for ncpus in [0, 2.5]:
     try:
         GHW(C, 1, ncpus=ncpus)
