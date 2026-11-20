@@ -227,14 +227,16 @@ if not (rhierarchy(C1, C2, ncpus=2) == [3, 5] and RGHW(C1, C2, 2, ncpus=3) == 5
         and higher_spectrum(D, ncpus=3) == higher_spectrum(D)):
     raise Exception("Error with the parallel relative search or spectra")
 GHWs.core.PARALLEL_MIN_CANDIDATES = 20000
-# We test a parallel step with more supports than sys.maxsize. Only the first set of 40 rows
-# avoids the last coordinate, so the second worker must be stopped when the first finds 40
+# We test a parallel step with more supports than sys.maxsize. Only the rows in Z (the 20001st
+# support, which the first worker reaches after 10000 others) avoid the last coordinate, so the
+# second worker must be stopped in the middle of its batch when the first finds 40
+from itertools import combinations, islice
 import multiprocessing
-I = identity_matrix(GF(2), 80)
-G = I.augment(matrix(GF(2), 80, 1, [0] * 40 + [1] * 40))
+Z = next(islice(combinations(range(80), 40), 20000, None))
+c = [int(t not in Z) for t in range(80)] # 0 exactly in the rows of Z
+G = identity_matrix(GF(2), 80).augment(matrix(GF(2), 80, 1, c))
 alarm(60) # So that a hang raises AlarmInterrupt
-if (GHW(LinearCode(G), 40, ncpus=2) != 40
-        or multiprocessing.active_children()):
+if GHW(LinearCode(G), 40, ncpus=2) != 40 or multiprocessing.active_children():
     raise Exception("Error with the parallel search with many supports")
 cancel_alarm()
 for ncpus in [0, 2.5]:
