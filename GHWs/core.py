@@ -33,7 +33,9 @@ from multiprocessing.connection import wait
 import operator
 import os
 import signal
+import sys
 import threading
+import warnings
 from copy import copy
 
 #Sage imports
@@ -419,6 +421,21 @@ def binary_rank(R, S, y):
 # cheaper, the threshold is 20 times larger
 PARALLEL_MIN_CANDIDATES = 20000
 
+def fork_is_unsafe():
+    r"""
+    This is an auxiliary function for search_step and spectrum_step. It returns True on macOS,
+    where the steps that would run in parallel run in a single process instead, and it warns
+    that ncpus is ignored there (by default, Python shows this warning only once). On macOS,
+    fork is unsafe: with Apple's Accelerate, for instance, a crash in a worker process can make
+    a matrix product of Sage return a zero matrix instead of raising an error, which gives a
+    wrong result.
+    """
+    if sys.platform != 'darwin':
+        return False
+    warnings.warn('ncpus is ignored on macOS, where the search runs in a single process (fork '
+                  'is unsafe there)')
+    return True
+
 def run_batch(writer, lifeline, lifeline_end, scan, k, w, rrefs, args, i, ncpus, by_supports):
     r"""
     This is an auxiliary function for parallel_batches, which runs in a worker process. It
@@ -625,8 +642,9 @@ def search_step(k, w, rrefs, gens, binary, ub, stop, verbose=False, ncpus=1, H2=
     for all the supports of size w of range(k), that is, the minimum of ub and the
     cardinalities of the supports of these subspaces (or the first one that is at most stop).
     With ncpus > 1, if the step has enough candidates (see PARALLEL_MIN_CANDIDATES), it is
-    divided into ncpus batches that run in parallel (see parallel_batches). The result is the
-    same, but with verbose=True only the improvements seen as the batches finish are printed.
+    divided into ncpus batches that run in parallel (see parallel_batches), except on macOS
+    (see fork_is_unsafe). The result is the same, but with verbose=True only the improvements
+    seen as the batches finish are printed.
 
     OUTPUT:
 
@@ -644,7 +662,8 @@ def search_step(k, w, rrefs, gens, binary, ub, stop, verbose=False, ncpus=1, H2=
     else:
         scan, args = rscan_step, (gens, binary, H2, ub, stop)
     candidates = binomial(k, w) * len(rrefs) * len(gens)
-    if ncpus == 1 or candidates < PARALLEL_MIN_CANDIDATES * (20 if binary else 1):
+    if (ncpus == 1 or candidates < PARALLEL_MIN_CANDIDATES * (20 if binary else 1)
+            or fork_is_unsafe()):
         return scan(combinations(range(k), w), rrefs, *args, verbose)
     results = parallel_batches(scan, k, w, rrefs, args, ncpus)
     try:
@@ -754,7 +773,7 @@ def spectrum_step(k, w, rrefs, G, binary, subspace_list=False, ncpus=1, H2=None)
     It returns count_step (or rcount_step) for all the supports of size w of range(k). With
     ncpus > 1 and subspace_list=False, if the step has enough candidates (see
     PARALLEL_MIN_CANDIDATES), it is divided into ncpus batches that run in parallel (see
-    parallel_batches), and their counts are added.
+    parallel_batches), and their counts are added, except on macOS (see fork_is_unsafe).
 
     OUTPUT:
 
@@ -773,7 +792,8 @@ def spectrum_step(k, w, rrefs, G, binary, subspace_list=False, ncpus=1, H2=None)
     else:
         count, args = rcount_step, (G, binary, H2, subspace_list)
     candidates = binomial(k, w) * len(rrefs)
-    if ncpus == 1 or subspace_list or candidates < PARALLEL_MIN_CANDIDATES * (20 if binary else 1):
+    if (ncpus == 1 or subspace_list or candidates < PARALLEL_MIN_CANDIDATES * (20 if binary else 1)
+            or fork_is_unsafe()):
         return count(combinations(range(k), w), rrefs, *args)
     results = parallel_batches(count, k, w, rrefs, args, ncpus)
     try:
@@ -1119,8 +1139,9 @@ def GHW(C, r, L=None, verbose=False, ncpus=1):
 
     The optional argument ncpus (1 by default) is the number of processes used by the
     search: with ncpus > 1, its large steps run in parallel, in processes created with fork
-    (tested on Linux and WSL; Python considers fork unsafe on macOS). The result is the same,
-    but with verbose=True fewer of the subspaces found may be printed.
+    (tested on Linux and WSL). The result is the same, but with verbose=True fewer of the
+    subspaces found may be printed. On macOS, where fork is unsafe, ncpus is ignored and the
+    search runs in a single process.
 
     OUTPUT:
 
@@ -1243,8 +1264,9 @@ def hierarchy(C, L=None, verbose=False, strategy='auto', ncpus=1):
 
     The optional argument ncpus (1 by default) is the number of processes used by the
     search: with ncpus > 1, its large steps run in parallel, in processes created with fork
-    (tested on Linux and WSL; Python considers fork unsafe on macOS). The result is the same,
-    but with verbose=True fewer of the subspaces found may be printed.
+    (tested on Linux and WSL). The result is the same, but with verbose=True fewer of the
+    subspaces found may be printed. On macOS, where fork is unsafe, ncpus is ignored and the
+    search runs in a single process.
 
     OUTPUT:
 
@@ -1407,8 +1429,9 @@ def RGHW(C, C2, r, L=None, verbose=False, ncpus=1):
 
     The optional argument ncpus (1 by default) is the number of processes used by the
     search: with ncpus > 1, its large steps run in parallel, in processes created with fork
-    (tested on Linux and WSL; Python considers fork unsafe on macOS). The result is the same,
-    but with verbose=True fewer of the subspaces found may be printed.
+    (tested on Linux and WSL). The result is the same, but with verbose=True fewer of the
+    subspaces found may be printed. On macOS, where fork is unsafe, ncpus is ignored and the
+    search runs in a single process.
 
     OUTPUT:
 
@@ -1532,8 +1555,9 @@ def rhierarchy(C, C2, L=None, verbose=False, ncpus=1):
 
     The optional argument ncpus (1 by default) is the number of processes used by the
     search: with ncpus > 1, its large steps run in parallel, in processes created with fork
-    (tested on Linux and WSL; Python considers fork unsafe on macOS). The result is the same,
-    but with verbose=True fewer of the subspaces found may be printed.
+    (tested on Linux and WSL). The result is the same, but with verbose=True fewer of the
+    subspaces found may be printed. On macOS, where fork is unsafe, ncpus is ignored and the
+    search runs in a single process.
 
     OUTPUT:
 
@@ -1673,8 +1697,8 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None, ncpus=1):
 
     The optional argument ncpus (1 by default) is the number of processes used: with
     ncpus > 1 and subspace_list=False, the large steps of the computation run in parallel, in
-    processes created with fork (tested on Linux and WSL; Python considers fork unsafe on
-    macOS). The result is the same.
+    processes created with fork (tested on Linux and WSL). The result is the same. On macOS,
+    where fork is unsafe, ncpus is ignored and the computation runs in a single process.
 
     OUTPUT:
 
@@ -1798,8 +1822,8 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None, ncpus=1)
     
     The optional argument ncpus (1 by default) is the number of processes used: with
     ncpus > 1 and subspace_list=False, the large steps of the computation run in parallel, in
-    processes created with fork (tested on Linux and WSL; Python considers fork unsafe on
-    macOS). The result is the same.
+    processes created with fork (tested on Linux and WSL). The result is the same. On macOS,
+    where fork is unsafe, ncpus is ignored and the computation runs in a single process.
 
     OUTPUT:
 
