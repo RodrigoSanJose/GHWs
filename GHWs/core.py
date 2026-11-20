@@ -27,12 +27,13 @@
 
 # Required imports
 # Standard library
-from contextlib import closing
 from itertools import combinations, islice, product
 from multiprocessing import get_context
 from multiprocessing.connection import wait
 import operator
+import os
 import signal
+import threading
 from copy import copy
 
 #Sage imports
@@ -418,70 +419,111 @@ def binary_rank(R, S, y):
 # cheaper, the threshold is 20 times larger
 PARALLEL_MIN_CANDIDATES = 20000
 
-def run_batch(writer, scan, k, w, rrefs, args, batch):
+def run_batch(writer, lifeline, lifeline_end, scan, k, w, rrefs, args, i, ncpus, by_supports):
     r"""
-    This is an auxiliary function for parallel_batches, which runs in a worker process. Here
-    batch is (first, last, rfirst, rlast). It applies scan to the supports of size w of
-    range(k) in the positions first to last - 1 and to the reduced row echelon forms in the
-    positions rfirst to rlast - 1, with the remaining arguments args, and it sends the result
-    through writer (or the exception raised, if any). The worker ignores Ctrl-C (the parent
-    process handles it and stops the workers).
+    This is an auxiliary function for parallel_batches, which runs in a worker process. It
+    applies scan to the supports of size w of range(k) and to the reduced row echelon forms in
+    rrefs, with the remaining arguments args, but only to the supports (if by_supports is True)
+    or to the matrices (otherwise) in the positions i, i + ncpus, i + 2 * ncpus, ... It sends
+    the result through writer (or the exception raised, if any). The worker ignores Ctrl-C,
+    and it ends as soon as the parent process closes lifeline_end, its end of the pipe
+    lifeline (see end_with_parent).
     """
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    first, last, rfirst, rlast = batch
+    os.close(lifeline_end) # The copy of the end of the parent (so that its closing is seen)
+    threading.Thread(target=end_with_parent, args=(lifeline,), daemon=True).start()
+    supports = combinations(range(k), w)
+    if by_supports:
+        supports = islice(supports, i, None, ncpus)
+    else:
+        rrefs = rrefs[i::ncpus]
     try:
-        value = scan(islice(combinations(range(k), w), first, last), rrefs[rfirst:rlast], *args)
-        writer.send((True, value))
+        writer.send((True, scan(supports, rrefs, *args)))
     except Exception as e:
         writer.send((False, e))
     writer.close()
 
+def end_with_parent(lifeline):
+    r"""
+    This is an auxiliary function for run_batch, which runs in a thread of each worker process.
+    Nothing is written in the pipe lifeline, so reading from it returns when the parent closes
+    its end, which it does when the step finishes or is stopped (and which also happens if the
+    parent ends). Then this ends the worker.
+    """
+    os.read(lifeline, 1)
+    os._exit(0)
+
+def start_workers(workers, lifeline, lifeline_end, scan, k, w, rrefs, args, ncpus, by_supports):
+    r"""
+    This is an auxiliary function for parallel_batches. It starts ncpus worker processes (see
+    run_batch), and it appends each of them to the list workers before it starts, with the two
+    ends of its pipe.
+    """
+    context = get_context('fork')
+    for i in range(ncpus):
+        reader, writer = context.Pipe(duplex=False)
+        # The workers are forked, so they get the data of the step without copying it
+        p = context.Process(target=run_batch, args=(writer, lifeline, lifeline_end, scan, k, w,
+                                                    rrefs, args, i, ncpus, by_supports))
+        workers.append((p, reader, writer))
+        p.start()
+        writer.close() # Only the worker writes in its pipe
+
+def worker_results(workers):
+    r"""
+    This is an auxiliary function for parallel_batches. It yields the results of the workers
+    (see run_batch) as they arrive, and it raises the exception of a worker, if any.
+    """
+    pending = [reader for p, reader, writer in workers]
+    while pending:
+        for reader in wait(pending): # The pipes with a result
+            pending.remove(reader)
+            try:
+                finished, value = reader.recv()
+            except EOFError:
+                raise Exception('A worker process ended without sending its result')
+            if not finished: # The exception raised in the worker
+                raise value
+            yield value
+
+def stop_workers(workers):
+    r"""
+    This is an auxiliary function for parallel_batches. It stops the workers that have started
+    (they also end by themselves, see end_with_parent), and it closes the ends of their pipes.
+    """
+    for p, reader, writer in workers:
+        if p.pid is not None: # It has started
+            p.kill() # SIGKILL, which (unlike SIGTERM) cannot be ignored
+            p.join()
+        reader.close()
+        writer.close()
+
 def parallel_batches(scan, k, w, rrefs, args, ncpus):
     r"""
     This is an auxiliary function for search_step and spectrum_step. It divides the step with
-    supports of size w into ncpus batches of consecutive supports (or of consecutive reduced
-    row echelon forms, if there are more of them), and it yields the results of scan on the
-    batches (see run_batch) as they finish. Each batch runs in its own process, created with
-    fork, and the processes that are still running are stopped when this generator is closed.
+    supports of size w into ncpus batches, which take every ncpus-th support (or every ncpus-th
+    reduced row echelon form, if there are more of them), and it yields the results of scan on
+    the batches (see run_batch) as they finish. Each batch runs in its own process, created
+    with fork, and the processes that are still running are stopped when this generator is
+    closed.
     """
-    nsupports = binomial(k, w)
-    R = len(rrefs)
-    if nsupports >= R:
-        batches = [(nsupports * i // ncpus, nsupports * (i + 1) // ncpus, 0, R)
-                   for i in range(ncpus)]
-    else:
-        batches = [(0, nsupports, R * i // ncpus, R * (i + 1) // ncpus) for i in range(ncpus)]
-    context = get_context('fork')
-    workers = [] # The processes, with the ends of their pipes where the parent reads
-    # Ctrl-C is held back while the workers start, so that they are always stopped afterwards
-    mask = signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
+    # Taking every ncpus-th support, no batch has to skip the supports of the others first
+    # (which is too slow when there are many of them)
+    by_supports = binomial(k, w) >= len(rrefs)
+    workers = [] # The processes, with the two ends of their pipes
+    lifeline, lifeline_end = os.pipe() # Every worker ends when lifeline_end is closed
     try:
-        for batch in batches:
-            reader, writer = context.Pipe(duplex=False)
-            # The workers are forked, so they get the data of the step without copying it
-            p = context.Process(target=run_batch, args=(writer, scan, k, w, rrefs, args, batch))
-            p.start()
-            workers.append((p, reader))
-            writer.close() # Only the worker writes in its pipe
-        signal.pthread_sigmask(signal.SIG_SETMASK, mask)
-        pending = [reader for p, reader in workers]
-        while pending:
-            for reader in wait(pending): # The pipes with a result
-                pending.remove(reader)
-                try:
-                    finished, value = reader.recv()
-                except EOFError:
-                    raise Exception('A worker process ended without sending its result')
-                if not finished: # The exception raised in the worker
-                    raise value
-                yield value
+        start_workers(workers, lifeline, lifeline_end, scan, k, w, rrefs, args, ncpus,
+                      by_supports)
+        yield from worker_results(workers)
     finally:
-        signal.pthread_sigmask(signal.SIG_SETMASK, mask)
-        for p, reader in workers:
-            if p.is_alive():
-                p.terminate()
-            p.join()
-            reader.close()
+        # This comes first, and Ctrl-C cannot interrupt it before the pipe is closed, so every
+        # worker ends even if Ctrl-C interrupts what follows. The loops are in other functions,
+        # since in Python 3.13 an interrupt at the end of some loops skips the finally clauses
+        # of the function
+        os.close(lifeline_end)
+        os.close(lifeline)
+        stop_workers(workers)
 
 def scan_step(supports, rrefs, gens, binary, ub, stop, verbose=False):
     r"""
@@ -600,14 +642,26 @@ def search_step(k, w, rrefs, gens, binary, ub, stop, verbose=False, ncpus=1, H2=
     candidates = binomial(k, w) * len(rrefs) * len(gens)
     if ncpus == 1 or candidates < PARALLEL_MIN_CANDIDATES * (20 if binary else 1):
         return scan(combinations(range(k), w), rrefs, *args, verbose)
-    with closing(parallel_batches(scan, k, w, rrefs, args, ncpus)) as results:
-        for value in results:
-            if value < ub:
-                ub = value
-                if verbose:
-                    print('Subspace with cardinality of support', ub, 'found')
-                if ub <= stop: # The other batches are not needed
-                    break
+    results = parallel_batches(scan, k, w, rrefs, args, ncpus)
+    try:
+        ub = min_result(results, ub, stop, verbose)
+    finally:
+        results.close() # This stops the workers (see parallel_batches)
+    return ub
+
+def min_result(results, ub, stop, verbose=False):
+    r"""
+    This is an auxiliary function for search_step. It returns the minimum of ub and the values
+    in results (the results of the batches of a step, see parallel_batches), as soon as it is
+    at most stop, which makes the other batches unnecessary.
+    """
+    for value in results:
+        if value < ub:
+            ub = value
+            if verbose:
+                print('Subspace with cardinality of support', ub, 'found')
+            if ub <= stop:
+                return ub
     return ub
 
 def count_step(supports, rrefs, G, binary, subspace_list=False):
@@ -717,12 +771,23 @@ def spectrum_step(k, w, rrefs, G, binary, subspace_list=False, ncpus=1, H2=None)
     candidates = binomial(k, w) * len(rrefs)
     if ncpus == 1 or subspace_list or candidates < PARALLEL_MIN_CANDIDATES * (20 if binary else 1):
         return count(combinations(range(k), w), rrefs, *args)
-    counts = {}
-    with closing(parallel_batches(count, k, w, rrefs, args, ncpus)) as results:
-        for batch_counts, batch_lists in results:
-            for key in batch_counts:
-                counts[key] = counts.get(key, 0) + batch_counts[key]
+    results = parallel_batches(count, k, w, rrefs, args, ncpus)
+    try:
+        counts = total_counts(results)
+    finally:
+        results.close() # This stops the workers (see parallel_batches)
     return counts, {}
+
+def total_counts(results):
+    r"""
+    This is an auxiliary function for spectrum_step. It adds the counts in results (the
+    results of the batches of a step, see parallel_batches).
+    """
+    counts = {}
+    for batch_counts, batch_lists in results:
+        for key in batch_counts:
+            counts[key] = counts.get(key, 0) + batch_counts[key]
+    return counts
 
 def nonzero_columns(j, K):
     r"""

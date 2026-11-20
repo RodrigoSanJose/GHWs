@@ -227,6 +227,10 @@ if not (rhierarchy(C1, C2, ncpus=2) == [3, 5] and RGHW(C1, C2, 2, ncpus=3) == 5
         and higher_spectrum(D, ncpus=3) == higher_spectrum(D)):
     raise Exception("Error with the parallel relative search or spectra")
 GHWs.core.PARALLEL_MIN_CANDIDATES = 20000
+# We test a parallel step with more supports than sys.maxsize (the first one gives the GHW)
+I = identity_matrix(GF(2), 80)
+if GHW(LinearCode(I.augment(I[:, -1:])), 40, ncpus=2) != 40:
+    raise Exception("Error with the parallel search with many supports")
 for ncpus in [0, 2.5]:
     try:
         GHW(C, 1, ncpus=ncpus)
