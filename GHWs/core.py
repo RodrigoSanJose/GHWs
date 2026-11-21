@@ -423,18 +423,24 @@ PARALLEL_MIN_CANDIDATES = 20000
 
 def fork_is_unsafe():
     r"""
-    This is an auxiliary function for search_step and spectrum_step. It returns True on macOS,
-    where the steps that would run in parallel run in a single process instead, and it warns
-    that ncpus is ignored there (Python usually shows this warning only once). On macOS,
-    fork is unsafe: with Apple's Accelerate, for instance, a crash in a worker process can make
-    a matrix product of Sage return a zero matrix instead of raising an error, which gives a
-    wrong result.
+    This is an auxiliary function for search_step and spectrum_step. It returns True, with a
+    warning that ncpus is ignored (Python usually shows it only once), on macOS and while
+    SIGCHLD is ignored: then the steps that would run in parallel run in a single process
+    instead. On macOS, fork is unsafe: with Apple's Accelerate, for instance, a crash in a worker
+    process can make a matrix product of Sage return a zero matrix instead of raising an error,
+    which gives a wrong result. While SIGCHLD is ignored, the system removes each worker as soon
+    as it ends, so its exit code is lost: the pipes that multiprocessing keeps for it would stay
+    open, and stopping it could kill another process that got the same process ID.
     """
-    if sys.platform != 'darwin':
-        return False
-    warnings.warn('ncpus is ignored on macOS, where the search runs in a single process (fork '
-                  'is unsafe there)')
-    return True
+    if sys.platform == 'darwin':
+        warnings.warn('ncpus is ignored on macOS, where the search runs in a single process (fork '
+                      'is unsafe there)')
+        return True
+    if signal.getsignal(signal.SIGCHLD) == signal.SIG_IGN:
+        warnings.warn('ncpus is ignored while SIGCHLD is ignored (the worker processes could not '
+                      'be waited for), and the search runs in a single process')
+        return True
+    return False
 
 def run_batch(writer, lifeline, lifeline_end, scan, k, w, rrefs, args, i, ncpus, by_supports):
     r"""
@@ -651,9 +657,9 @@ def search_step(k, w, rrefs, gens, binary, ub, stop, verbose=False, ncpus=1, H2=
     for all the supports of size w of range(k), that is, the minimum of ub and the
     cardinalities of the supports of these subspaces (or the first one that is at most stop).
     With ncpus > 1, if the step has enough candidates (see PARALLEL_MIN_CANDIDATES), it is
-    divided into ncpus batches that run in parallel (see parallel_batches), except on macOS
-    (see fork_is_unsafe). The result is the same, but with verbose=True only the improvements
-    seen as the batches finish are printed.
+    divided into ncpus batches that run in parallel (see parallel_batches), except on macOS and
+    while SIGCHLD is ignored (see fork_is_unsafe). The result is the same, but with verbose=True
+    only the improvements seen as the batches finish are printed.
 
     OUTPUT:
 
@@ -782,7 +788,8 @@ def spectrum_step(k, w, rrefs, G, binary, subspace_list=False, ncpus=1, H2=None)
     It returns count_step (or rcount_step) for all the supports of size w of range(k). With
     ncpus > 1 and subspace_list=False, if the step has enough candidates (see
     PARALLEL_MIN_CANDIDATES), it is divided into ncpus batches that run in parallel (see
-    parallel_batches), and their counts are added, except on macOS (see fork_is_unsafe).
+    parallel_batches), and their counts are added, except on macOS and while SIGCHLD is ignored
+    (see fork_is_unsafe).
 
     OUTPUT:
 
@@ -1151,7 +1158,7 @@ def GHW(C, r, L=None, verbose=False, ncpus=1):
     (tested on Linux and WSL). The result is the same, but with verbose=True the subspaces
     printed may differ (in a parallel step, the best subspace of each batch is printed when the
     batch finishes, if it improves the bound). Each process may end up with its own copy of the
-    data of a step, so the memory used can grow up to about ncpus + 1 times. On macOS, where
+    data of a step, so up to about ncpus + 1 copies of it may be in memory. On macOS, where
     fork is unsafe, ncpus is ignored and the search runs in a single process.
 
     OUTPUT:
@@ -1278,7 +1285,7 @@ def hierarchy(C, L=None, verbose=False, strategy='auto', ncpus=1):
     (tested on Linux and WSL). The result is the same, but with verbose=True the subspaces
     printed may differ (in a parallel step, the best subspace of each batch is printed when the
     batch finishes, if it improves the bound). Each process may end up with its own copy of the
-    data of a step, so the memory used can grow up to about ncpus + 1 times. On macOS, where
+    data of a step, so up to about ncpus + 1 copies of it may be in memory. On macOS, where
     fork is unsafe, ncpus is ignored and the search runs in a single process.
 
     OUTPUT:
@@ -1444,7 +1451,7 @@ def RGHW(C, C2, r, L=None, verbose=False, ncpus=1):
     (tested on Linux and WSL). The result is the same, but with verbose=True the subspaces
     printed may differ (in a parallel step, the best subspace of each batch is printed when the
     batch finishes, if it improves the bound). Each process may end up with its own copy of the
-    data of a step, so the memory used can grow up to about ncpus + 1 times. On macOS, where
+    data of a step, so up to about ncpus + 1 copies of it may be in memory. On macOS, where
     fork is unsafe, ncpus is ignored and the search runs in a single process.
 
     OUTPUT:
@@ -1572,7 +1579,7 @@ def rhierarchy(C, C2, L=None, verbose=False, ncpus=1):
     (tested on Linux and WSL). The result is the same, but with verbose=True the subspaces
     printed may differ (in a parallel step, the best subspace of each batch is printed when the
     batch finishes, if it improves the bound). Each process may end up with its own copy of the
-    data of a step, so the memory used can grow up to about ncpus + 1 times. On macOS, where
+    data of a step, so up to about ncpus + 1 copies of it may be in memory. On macOS, where
     fork is unsafe, ncpus is ignored and the search runs in a single process.
 
     OUTPUT:
@@ -1714,9 +1721,9 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None, ncpus=1):
     The optional argument ncpus (1 by default) is the number of processes used: with
     ncpus > 1 and subspace_list=False, the large steps of the computation run in parallel, in
     processes created with fork (tested on Linux and WSL). The result is the same. Each process
-    may end up with its own copy of the data of a step, so the memory used can grow up to about
-    ncpus + 1 times. On macOS, where fork is unsafe, ncpus is ignored and the computation runs
-    in a single process.
+    may end up with its own copy of the data of a step, so up to about ncpus + 1 copies of it may
+    be in memory. On macOS, where fork is unsafe, ncpus is ignored and the computation runs in a
+    single process.
 
     OUTPUT:
 
@@ -1841,9 +1848,9 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None, ncpus=1)
     The optional argument ncpus (1 by default) is the number of processes used: with
     ncpus > 1 and subspace_list=False, the large steps of the computation run in parallel, in
     processes created with fork (tested on Linux and WSL). The result is the same. Each process
-    may end up with its own copy of the data of a step, so the memory used can grow up to about
-    ncpus + 1 times. On macOS, where fork is unsafe, ncpus is ignored and the computation runs
-    in a single process.
+    may end up with its own copy of the data of a step, so up to about ncpus + 1 copies of it may
+    be in memory. On macOS, where fork is unsafe, ncpus is ignored and the computation runs in a
+    single process.
 
     OUTPUT:
 
