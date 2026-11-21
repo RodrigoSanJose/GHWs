@@ -1,5 +1,5 @@
 #################################################################################
-# V1.2.2 18/11/26
+# V1.3.0 21/11/26
 # Author:
 # Rodrigo San-José. Contact: rsanjose@vt.edu
 # GitHub repository: https://github.com/RodrigoSanJose/GHWs
