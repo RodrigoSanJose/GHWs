@@ -152,8 +152,12 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False, ncpus=1):
             rrefs = list(binary_subspaces(r, w))
         else: # All reduced row echelon forms in the first w columns
             rrefs = subspaces(r, w, w, K)
-        # The answer is known as soon as ghwub <= stop
-        stop = ceil(bound) - 1 if bound_type == 'lower' else bound
+        # The answer is known as soon as ghwub <= stop. The ceiling of bound is its own __ceil__
+        # if it has one (Sage's ceil does not accept Python's Fraction and Decimal)
+        if bound_type == 'lower':
+            stop = (bound.__ceil__() if hasattr(bound, '__ceil__') else ceil(bound)) - 1
+        else:
+            stop = bound
         ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, stop, verbose, ncpus)
         if bound_type == 'lower' and ghwub < bound:
             return False
@@ -320,8 +324,12 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False, ncpus
             rrefs = list(binary_subspaces(r, w))
         else: # All reduced row echelon forms in the first w columns
             rrefs = subspaces(r, w, w, K)
-        # The answer is known as soon as ghwub <= stop
-        stop = ceil(bound) - 1 if bound_type == 'lower' else bound
+        # The answer is known as soon as ghwub <= stop. The ceiling of bound is its own __ceil__
+        # if it has one (Sage's ceil does not accept Python's Fraction and Decimal)
+        if bound_type == 'lower':
+            stop = (bound.__ceil__() if hasattr(bound, '__ceil__') else ceil(bound)) - 1
+        else:
+            stop = bound
         ghwub = search_step(k, w, rrefs, gen_reduced, binary, ghwub, stop, verbose, ncpus, H2)
         if bound_type == 'lower' and ghwub < bound:
             return False
