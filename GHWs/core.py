@@ -1109,7 +1109,7 @@ def num_subspaces(r, w, n, K):
     """
     try:
         q = len(K.list())
-    except:
+    except Exception:
         raise Exception('K has to be a finite field')
     s = 0
     for i in range(w - r + 1):
@@ -1208,7 +1208,7 @@ def GHW(C, r, L=None, verbose=False, ncpus=1):
     if cyc:
         try:
             ghwlb = max(ghwlb, bch_bound(C)) 
-        except:
+        except Exception:
             ghwlb = ghwlb
     ghwub = nsupp - k + r # Singleton bound for C punctured on its support
     w = r
@@ -1378,7 +1378,7 @@ def hierarchy(C, L=None, verbose=False, strategy='auto', ncpus=1):
             if cyc:
                 try:
                     ghwlb = max(ghwlb, bch_bound(C)) 
-                except:
+                except Exception:
                     ghwlb = ghwlb
         else:
             # (q^r - 1) d_{r-1} <= (q^r - q) d_r (Helleseth, Klove, Levenshtein and Ytrehus),
@@ -1514,7 +1514,7 @@ def RGHW(C, C2, r, L=None, verbose=False, ncpus=1):
     if cyc:
         try:
             ghwlb = max(ghwlb, bch_bound(C)) 
-        except:
+        except Exception:
             ghwlb = ghwlb
     ghwub = nsupp - k + r # Singleton bound for C punctured on its support
     w = r
@@ -1648,7 +1648,7 @@ def rhierarchy(C, C2, L=None, verbose=False, ncpus=1):
             if cyc:
                 try:
                     ghwlb = max(ghwlb, bch_bound(C)) 
-                except:
+                except Exception:
                     ghwlb = ghwlb
         else:
             # (q^r - 1) M_{r-1} <= (q^r - q) M_r, as for the GHWs (Helleseth, Klove, Levenshtein
@@ -1912,7 +1912,8 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None, ncpus=1)
         subsp = {} 
     if R is None:
         R = range(k - k2 + 1) 
-    elif not set(R).issubset(set(range(k - k2 + 1))):
+    R = list(R) # So that the check below does not use up an iterator
+    if not set(R).issubset(set(range(k - k2 + 1))):
         raise Exception('Invalid range of values for R')
         
     # Over GF(2), the rows of G and of G * H2^T are used as integers (unless the subspaces
@@ -2029,7 +2030,7 @@ def GHW_low_mem(C, r, L=None, verbose=False):
     if cyc:
         try:
             ghwlb = max(ghwlb, bch_bound(C)) 
-        except:
+        except Exception:
             ghwlb = ghwlb
     ghwub = nsupp - k + r # Singleton bound for C punctured on its support
     w = r
@@ -2211,7 +2212,7 @@ def hierarchy_low_mem(C, L=None, verbose=False, strategy='auto'):
             if cyc:
                 try:
                     ghwlb = max(ghwlb, bch_bound(C)) 
-                except:
+                except Exception:
                     ghwlb = ghwlb
         else:
             # (q^r - 1) d_{r-1} <= (q^r - q) d_r (Helleseth, Klove, Levenshtein and Ytrehus),
@@ -2362,7 +2363,7 @@ def RGHW_low_mem(C, C2, r, L=None, verbose=False):
     if cyc:
         try:
             ghwlb = max(ghwlb, bch_bound(C)) 
-        except:
+        except Exception:
             ghwlb = ghwlb
     ghwub = nsupp - k + r # Singleton bound for C punctured on its support
     w = r
@@ -2516,7 +2517,7 @@ def rhierarchy_low_mem(C, C2, L=None, verbose=False):
             if cyc:
                 try:
                     ghwlb = max(ghwlb, bch_bound(C)) 
-                except:
+                except Exception:
                     ghwlb = ghwlb
         else:
             # (q^r - 1) M_{r-1} <= (q^r - q) M_r, as for the GHWs (Helleseth, Klove, Levenshtein
@@ -2802,7 +2803,8 @@ def rhigher_spectrum_low_mem(C, C2, verbose=False, subspace_list=False, R=None):
         subsp = {} 
     if R is None:
         R = range(k - k2 + 1) 
-    elif not set(R).issubset(set(range(k - k2 + 1))):
+    R = list(R) # So that the check below does not use up an iterator
+    if not set(R).issubset(set(range(k - k2 + 1))):
         raise Exception('Invalid range of values for R')
         
     # Over GF(2), the rows of G and of G * H2^T are used as integers (unless the subspaces

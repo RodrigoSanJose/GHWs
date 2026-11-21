@@ -102,7 +102,7 @@ def GHW_bound(C, r, bound, bound_type='lower', L=None, verbose=False, ncpus=1):
     if cyc:
         try:
             ghwlb = max(ghwlb, bch_bound(C))
-        except:
+        except Exception:
             ghwlb = ghwlb
     ghwub = ghwmax
     if bound_type == 'lower':
@@ -274,7 +274,7 @@ def RGHW_bound(C, C2, r, bound, bound_type='lower', L=None, verbose=False, ncpus
     if cyc:
         try:
             ghwlb = max(ghwlb, bch_bound(C))
-        except:
+        except Exception:
             ghwlb = ghwlb
     ghwub = ghwmax
     if bound_type == 'lower':
@@ -430,7 +430,7 @@ def GHW_bound_low_mem(C, r, bound, bound_type='lower', L=None, verbose=False):
     if cyc:
         try:
             ghwlb = max(ghwlb, bch_bound(C))
-        except:
+        except Exception:
             ghwlb = ghwlb
     ghwub = ghwmax
     if bound_type == 'lower':
@@ -609,7 +609,7 @@ def RGHW_bound_low_mem(C, C2, r, bound, bound_type='lower', L=None, verbose=Fals
     if cyc:
         try:
             ghwlb = max(ghwlb, bch_bound(C))
-        except:
+        except Exception:
             ghwlb = ghwlb
     ghwub = ghwmax
     if bound_type == 'lower':
