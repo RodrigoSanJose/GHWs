@@ -92,7 +92,7 @@ def vecwt(w, n, K):
     
 def colwt(w, n, K):
     r"""
-    This is an auxiliary function for GHW, hierarchy, RGHW and rhierarchy. 
+    This is an auxiliary function for subspaces_iter (used by the low memory functions).
     It computes all the vectors v of length n such that the last n - w coordinates
     are equal to 0 and Hamming weight between 1 and w (both included).
 
@@ -425,7 +425,7 @@ def fork_is_unsafe():
     r"""
     This is an auxiliary function for search_step and spectrum_step. It returns True on macOS,
     where the steps that would run in parallel run in a single process instead, and it warns
-    that ncpus is ignored there (by default, Python shows this warning only once). On macOS,
+    that ncpus is ignored there (Python usually shows this warning only once). On macOS,
     fork is unsafe: with Apple's Accelerate, for instance, a crash in a worker process can make
     a matrix product of Sage return a zero matrix instead of raising an error, which gives a
     wrong result.
@@ -480,7 +480,9 @@ def start_workers(workers, lifeline, lifeline_end, scan, k, w, rrefs, args, ncpu
     context = get_context('fork')
     for i in range(ncpus):
         reader, writer = context.Pipe(duplex=False)
-        # The workers are forked, so they get the data of the step without copying it
+        # The workers are forked, so they get the data of the step without pickling it (but each
+        # of them may end up copying most of it, since Python writes the reference counts of the
+        # objects that it reads)
         p = context.Process(target=run_batch, args=(writer, lifeline, lifeline_end, scan, k, w,
                                                     rrefs, args, i, ncpus, by_supports))
         workers.append((p, reader, writer))
@@ -507,12 +509,18 @@ def worker_results(workers):
 def stop_workers(workers):
     r"""
     This is an auxiliary function for parallel_batches. It stops the workers that have started
-    (they also end by themselves, see end_with_parent), and it closes the ends of their pipes.
+    (they also end by themselves, see end_with_parent), and it closes their processes and the
+    ends of their pipes.
     """
     for p, reader, writer in workers:
         if p.pid is not None: # It has started
             p.kill() # SIGKILL, which (unlike SIGTERM) cannot be ignored
             p.join()
+            # This closes the pipes that multiprocessing keeps for the process, which otherwise
+            # stay open while p is referenced (for instance, from the traceback of an exception).
+            # If SIGCHLD is ignored, the exit code is unknown and close would raise an exception
+            if p.exitcode is not None:
+                p.close()
         reader.close()
         writer.close()
 
@@ -537,11 +545,12 @@ def parallel_batches(scan, k, w, rrefs, args, ncpus):
     finally:
         # This comes first, and Ctrl-C cannot interrupt it before the pipe is closed, so the
         # workers end even if Ctrl-C interrupts what follows (a worker whose start was
-        # interrupted may remain as a zombie, without running, until the parent ends). This
-        # assumes that no other parallel step runs at the same time in this process (for
-        # instance, in another thread), since its workers would inherit lifeline_end. The loops
-        # are in other functions, since in Python 3.13 an interrupt at the end of some loops
-        # skips the finally clauses of the function
+        # interrupted may remain as a zombie, without running, until the parent ends, and some
+        # pipes of multiprocessing may stay open; an interrupted stop may also leave an ended
+        # worker in multiprocessing.active_children()). This assumes that no other parallel step
+        # runs at the same time in this process (for instance, in another thread), since its
+        # workers would inherit lifeline_end. The loops are in other functions, since in Python
+        # 3.13 an interrupt at the end of some loops skips the finally clauses of the function
         os.close(lifeline_end)
         os.close(lifeline)
         stop_workers(workers)
@@ -1139,9 +1148,11 @@ def GHW(C, r, L=None, verbose=False, ncpus=1):
 
     The optional argument ncpus (1 by default) is the number of processes used by the
     search: with ncpus > 1, its large steps run in parallel, in processes created with fork
-    (tested on Linux and WSL). The result is the same, but with verbose=True fewer of the
-    subspaces found may be printed. On macOS, where fork is unsafe, ncpus is ignored and the
-    search runs in a single process.
+    (tested on Linux and WSL). The result is the same, but with verbose=True the subspaces
+    printed may differ (in a parallel step, the best subspace of each batch is printed when the
+    batch finishes, if it improves the bound). Each process may end up with its own copy of the
+    data of a step, so the memory used can grow up to about ncpus + 1 times. On macOS, where
+    fork is unsafe, ncpus is ignored and the search runs in a single process.
 
     OUTPUT:
 
@@ -1264,9 +1275,11 @@ def hierarchy(C, L=None, verbose=False, strategy='auto', ncpus=1):
 
     The optional argument ncpus (1 by default) is the number of processes used by the
     search: with ncpus > 1, its large steps run in parallel, in processes created with fork
-    (tested on Linux and WSL). The result is the same, but with verbose=True fewer of the
-    subspaces found may be printed. On macOS, where fork is unsafe, ncpus is ignored and the
-    search runs in a single process.
+    (tested on Linux and WSL). The result is the same, but with verbose=True the subspaces
+    printed may differ (in a parallel step, the best subspace of each batch is printed when the
+    batch finishes, if it improves the bound). Each process may end up with its own copy of the
+    data of a step, so the memory used can grow up to about ncpus + 1 times. On macOS, where
+    fork is unsafe, ncpus is ignored and the search runs in a single process.
 
     OUTPUT:
 
@@ -1368,7 +1381,6 @@ def hierarchy(C, L=None, verbose=False, strategy='auto', ncpus=1):
         ghwub = nsupp - k + r # Singleton bound for C punctured on its support
         w = r
         while w <= k and ghwlb < ghwub: 
-            terminate = False
             # Computation of w0, the expected w to finish
             rm = []
             if cyc:
@@ -1429,9 +1441,11 @@ def RGHW(C, C2, r, L=None, verbose=False, ncpus=1):
 
     The optional argument ncpus (1 by default) is the number of processes used by the
     search: with ncpus > 1, its large steps run in parallel, in processes created with fork
-    (tested on Linux and WSL). The result is the same, but with verbose=True fewer of the
-    subspaces found may be printed. On macOS, where fork is unsafe, ncpus is ignored and the
-    search runs in a single process.
+    (tested on Linux and WSL). The result is the same, but with verbose=True the subspaces
+    printed may differ (in a parallel step, the best subspace of each batch is printed when the
+    batch finishes, if it improves the bound). Each process may end up with its own copy of the
+    data of a step, so the memory used can grow up to about ncpus + 1 times. On macOS, where
+    fork is unsafe, ncpus is ignored and the search runs in a single process.
 
     OUTPUT:
 
@@ -1555,9 +1569,11 @@ def rhierarchy(C, C2, L=None, verbose=False, ncpus=1):
 
     The optional argument ncpus (1 by default) is the number of processes used by the
     search: with ncpus > 1, its large steps run in parallel, in processes created with fork
-    (tested on Linux and WSL). The result is the same, but with verbose=True fewer of the
-    subspaces found may be printed. On macOS, where fork is unsafe, ncpus is ignored and the
-    search runs in a single process.
+    (tested on Linux and WSL). The result is the same, but with verbose=True the subspaces
+    printed may differ (in a parallel step, the best subspace of each batch is printed when the
+    batch finishes, if it improves the bound). Each process may end up with its own copy of the
+    data of a step, so the memory used can grow up to about ncpus + 1 times. On macOS, where
+    fork is unsafe, ncpus is ignored and the search runs in a single process.
 
     OUTPUT:
 
@@ -1697,8 +1713,10 @@ def higher_spectrum(C, verbose=False, subspace_list=False, R=None, ncpus=1):
 
     The optional argument ncpus (1 by default) is the number of processes used: with
     ncpus > 1 and subspace_list=False, the large steps of the computation run in parallel, in
-    processes created with fork (tested on Linux and WSL). The result is the same. On macOS,
-    where fork is unsafe, ncpus is ignored and the computation runs in a single process.
+    processes created with fork (tested on Linux and WSL). The result is the same. Each process
+    may end up with its own copy of the data of a step, so the memory used can grow up to about
+    ncpus + 1 times. On macOS, where fork is unsafe, ncpus is ignored and the computation runs
+    in a single process.
 
     OUTPUT:
 
@@ -1822,8 +1840,10 @@ def rhigher_spectrum(C, C2, verbose=False, subspace_list=False, R=None, ncpus=1)
     
     The optional argument ncpus (1 by default) is the number of processes used: with
     ncpus > 1 and subspace_list=False, the large steps of the computation run in parallel, in
-    processes created with fork (tested on Linux and WSL). The result is the same. On macOS,
-    where fork is unsafe, ncpus is ignored and the computation runs in a single process.
+    processes created with fork (tested on Linux and WSL). The result is the same. Each process
+    may end up with its own copy of the data of a step, so the memory used can grow up to about
+    ncpus + 1 times. On macOS, where fork is unsafe, ncpus is ignored and the computation runs
+    in a single process.
 
     OUTPUT:
 
